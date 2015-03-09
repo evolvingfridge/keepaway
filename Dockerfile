@@ -31,8 +31,11 @@ RUN cd ~/rcssmonitor_qt4 && ./configure --with-boost-libdir=/usr/lib/x86_64-linu
 #RUN git clone https://github.com/tjpalmer/keepaway.git
 RUN sudo cp /root/.bashrc /home/soccer/.bashrc
 
+RUN mkdir -p /home/soccer/keepaway
+ADD keepaway/ /home/soccer/keepaway/
+RUN sudo chgrp -R soccer /home/soccer/keepaway/ && sudo chown -R soccer /home/soccer/keepaway/
+
 WORKDIR /home/soccer/keepaway
 RUN cd player && make
 RUN cd tools && make
 
-VOLUME  ["/home/soccer/keepaway"]
