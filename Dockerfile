@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get install -y gcc python checkinstall flex build-essential libboost-all-dev vim wget pkg-config qt4-dev-tools libqt4-dev libqt4-core libqt4-gui libqt4-gui libqt4-gui libqt4-network libqt4-opengl libqt4-dev libaudio-dev libxt-dev libpng12-dev libxi-dev libxrender-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev git
 
 RUN mkdir -p /home/soccer
-RUN groupadd -r soccer && useradd -r -g soccer --shell /bin/bash --home /home/soccer soccer
+RUN groupadd -r soccer --gid=1000 && useradd -r --uid=1000 --gid=1000 -g soccer --shell /bin/bash --home /home/soccer soccer
 RUN chgrp -R soccer /home/soccer && chown -R soccer /home/soccer
 RUN adduser soccer sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
@@ -31,11 +31,18 @@ RUN cd ~/rcssmonitor_qt4 && ./configure --with-boost-libdir=/usr/lib/x86_64-linu
 #RUN git clone https://github.com/tjpalmer/keepaway.git
 RUN sudo cp /root/.bashrc /home/soccer/.bashrc
 
+RUN wget ftp://www.hensa.ac.uk/sites/distfiles.macports.org/gccmakedep/gccmakedep-1.0.2.tar.bz2
+RUN tar jxf gccmakedep-1.0.2.tar.bz2 && cd ~/gccmakedep-1.0.2 && ./configure && make && sudo make install
+
+
+RUN mkdir -p /home/soccer/logs
+RUN mkdir -p /home/soccer/.rcssserver/
+VOLUME ["/home/soccer/logs", "/home/soccer/.rcssserver"]
+
 RUN mkdir -p /home/soccer/keepaway
 ADD keepaway/ /home/soccer/keepaway/
 RUN sudo chgrp -R soccer /home/soccer/keepaway/ && sudo chown -R soccer /home/soccer/keepaway/
 
 WORKDIR /home/soccer/keepaway
-RUN cd player && make
+RUN cd player && make depend && make
 RUN cd tools && make
-

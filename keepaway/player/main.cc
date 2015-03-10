@@ -1,10 +1,10 @@
 /*
-Copyright (c) 2004, Gregory Kuhlmann, Peter Stone 
-University of Texas at Austin               
+Copyright (c) 2004, Gregory Kuhlmann, Peter Stone
+University of Texas at Austin
 All right reserved
 
-Based On:     
-         
+Based On:
+
 Copyright (c) 2000-2003, Jelle Kok, University of Amsterdam
 All rights reserved.
 
@@ -58,6 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "KeepawayPlayer.h"
 #include "HandCodedAgent.h"
 #include "LinearSarsaAgent.h"
+#include "LearningAgent.h"
 
 #include "Parse.h"
 #include <string.h>   // needed for strcpy
@@ -284,11 +285,12 @@ int main( int argc, char * argv[] )
   double ranges[ MAX_STATE_VARS ];
   double minValues[ MAX_STATE_VARS ];
   double resolutions[ MAX_STATE_VARS ];
-  int numFeatures = wm.keeperStateRangesAndResolutions( ranges, minValues, resolutions, 
+  int numFeatures = wm.keeperStateRangesAndResolutions( ranges, minValues, resolutions,
                                                         iNumKeepers, iNumTakers );
   int numActions = iNumKeepers;
 
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
+    /*
     // (l)earned
     // or "learned!" -> Don't explore at all.
     LinearSarsaAgent* linearSarsaAgent = new LinearSarsaAgent(
@@ -302,6 +304,9 @@ int main( int argc, char * argv[] )
     }
     // Done setting up.
     sa = linearSarsaAgent;
+    */
+    sa = new LearningAgent( numFeatures, numActions,
+                            bLearn, loadWeightsFile, saveWeightsFile );
   } else if (!strncmp(strPolicy, "ext=", 4)) {
     // Load extension.
     // Name should come after "ext=". Yes, this is hackish.
@@ -346,7 +351,7 @@ int main( int argc, char * argv[] )
     cerr << "No agent!" << endl;
     return EXIT_FAILURE;
   }
-  KeepawayPlayer bp( sa, &a, &wm, &ss, &cs, strTeamName, 
+  KeepawayPlayer bp( sa, &a, &wm, &ss, &cs, strTeamName,
                      iNumKeepers, iNumTakers, dVersion, iReconnect );
 
 #ifdef WIN32
@@ -376,7 +381,7 @@ void printOptions( )
    " a file                - write drawing log info to "             << endl <<
    " c(lientconf) file     - use file as client conf file"           << endl <<
    " d(rawloglevel) int[..int] - level(s) of drawing debug info"     << endl <<
-   " e(nable) learning 0/1  - turn learning on/off"                  << endl << 
+   " e(nable) learning 0/1  - turn learning on/off"                  << endl <<
    " f save weights file   - use file to save weights"               << endl <<
    " h(ost) hostname       - host to connect with"                   << endl <<
    " he(lp)                - print this information"                 << endl <<

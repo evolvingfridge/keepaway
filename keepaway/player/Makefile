@@ -10,7 +10,7 @@ TARGET  = keepaway_player
 
 # ==== INCLUDES =================================================
 
-SOCCER_INCLUDES	= 
+SOCCER_INCLUDES	=
 INCLUDES	= $(SOCCER_INCLUDES)
 
 # ==== FLAGS ====================================================
@@ -26,10 +26,10 @@ CFLAGS_DEBUG	= -g
 CFLAGS_OPT     	= #-O3 #-static
 CFLAGS_WARN     = -Wall
 
-OSFLAGS_SunOS_5 = -DSolaris 
+OSFLAGS_SunOS_5 = -DSolaris
 OSFLAGS_linux   = -Dlinux -rdynamic
 
-CLIBS_SunOS_5   = 
+CLIBS_SunOS_5   =
 CLIBS_linux     =
 
 FLAGS           = ${OSFLAGS} ${CFLAGS_OPT} ${CFLAGS_DEBUG} ${CFLAGS_WARN}
@@ -69,6 +69,7 @@ SRCS_PLAYER 	= ${SRCS} \
 		BasicPlayer.cc \
 		KeepawayPlayer.cc \
 		HandCodedAgent.cc \
+		LearningAgent.cc \
 		tiles2.cc \
 		LinearSarsaAgent.cc \
 		main.cc
@@ -87,7 +88,7 @@ all::	$(TARGET) demo_extension.so
 demo_extension.so: DemoExtension.cc
 	$(COMPILE) -fPIC -shared -o demo_extension.so DemoExtension.cc
 
-keepaway_player: $(OBJS_PLAYER)  
+keepaway_player: $(OBJS_PLAYER)
 	$(COMPILE) -o  $@ $(OBJS_PLAYER) ${CFLAGS_LIBS}
 
 update:
