@@ -3,7 +3,32 @@ MAINTAINER Mateusz Kurek master.mateusz@gmail.com
 
 
 RUN apt-get update
-RUN apt-get install -y gcc python checkinstall flex build-essential libboost-all-dev vim wget pkg-config qt4-dev-tools libqt4-dev libqt4-core libqt4-gui libqt4-gui libqt4-gui libqt4-network libqt4-opengl libqt4-dev libaudio-dev libxt-dev libpng12-dev libxi-dev libxrender-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev git
+RUN apt-get install -y \
+    build-essential \
+    checkinstall \
+    flex \
+    gcc \
+    git \
+    libboost-all-dev \
+    libqt4-dev \
+    libqt4-core \
+    libqt4-gui \
+    libqt4-network \
+    libqt4-opengl \
+    libqt4-dev \
+    libaudio-dev \
+    libxt-dev \
+    libpng12-dev \
+    libxi-dev \
+    libxrender-dev \
+    libfreetype6-dev \
+    libfontconfig1-dev \
+    libglib2.0-dev \
+    pkg-config \
+    python \
+    qt4-dev-tools \
+    wget \
+    vim
 
 RUN mkdir -p /home/soccer
 RUN groupadd -r soccer --gid=1000 && useradd -r --uid=1000 --gid=1000 -g soccer --shell /bin/bash --home /home/soccer soccer
@@ -34,6 +59,15 @@ RUN sudo cp /root/.bashrc /home/soccer/.bashrc
 RUN wget ftp://www.hensa.ac.uk/sites/distfiles.macports.org/gccmakedep/gccmakedep-1.0.2.tar.bz2
 RUN tar jxf gccmakedep-1.0.2.tar.bz2 && cd ~/gccmakedep-1.0.2 && ./configure && make && sudo make install
 
+# protobuf
+RUN wget https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz
+RUN tar -xzvf protobuf-2.6.1.tar.gz
+RUN cd protobuf-2.6.1 && ./configure && make && sudo make install
+
+# zeromq
+RUN wget http://download.zeromq.org/zeromq-4.0.5.tar.gz
+RUN tar -xzvf zeromq-4.0.5.tar.gz
+RUN cd zeromq-4.0.5 && ./configure && make && sudo make install
 
 RUN mkdir -p /home/soccer/logs
 RUN mkdir -p /home/soccer/.rcssserver/
@@ -46,3 +80,10 @@ RUN sudo chgrp -R soccer /home/soccer/keepaway/ && sudo chown -R soccer /home/so
 WORKDIR /home/soccer/keepaway
 RUN cd player && make depend && make
 RUN cd tools && make
+
+WORKDIR /home/soccer
+RUN sudo apt-get install -y python-virtualenv
+RUN virtualenv agent
+ADD agent/ /home/soccer/agent/src/agent/
+RUN sudo apt-get install -y liblapack-dev libatlas-dev gfortran
+RUN /home/soccer/agent/bin/pip install -r /home/soccer/agent/src/agent/requirements.txt

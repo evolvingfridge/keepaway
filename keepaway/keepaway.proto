@@ -1,0 +1,10 @@
+package prototest;
+
+message StepIn {
+    required double reward = 1;
+    repeated double state = 2 [packed = true];
+}
+
+message StepOut {
+    required int32 action = 1;
+}
