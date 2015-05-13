@@ -29,6 +29,8 @@ RUN apt-get install -y \
     qt4-dev-tools \
     wget \
     vim
+RUN apt-get install -y python-virtualenv liblapack-dev libatlas-dev gfortran
+RUN pip install numpy Theano
 
 RUN mkdir -p /home/soccer
 RUN groupadd -r soccer --gid=1000 && useradd -r --uid=1000 --gid=1000 -g soccer --shell /bin/bash --home /home/soccer soccer
@@ -73,17 +75,20 @@ RUN mkdir -p /home/soccer/logs
 RUN mkdir -p /home/soccer/.rcssserver/
 VOLUME ["/home/soccer/logs", "/home/soccer/.rcssserver"]
 
+# TEMPORARY
+RUN virtualenv --system-site-packages agent
+RUN /home/soccer/agent/bin/pip install ipython numpy mock pdbpp protobuf Theano
+RUN /home/soccer/agent/bin/pip install pyzmq
+
+RUN sudo ldconfig
+
 RUN mkdir -p /home/soccer/keepaway
 ADD keepaway/ /home/soccer/keepaway/
 RUN sudo chgrp -R soccer /home/soccer/keepaway/ && sudo chown -R soccer /home/soccer/keepaway/
 
+ADD agent/ /home/soccer/agent/src/agent/
+#RUN /home/soccer/agent/bin/pip install -r /home/soccer/agent/src/agent/requirements.txt
+
 WORKDIR /home/soccer/keepaway
 RUN cd player && make depend && make
 RUN cd tools && make
-
-WORKDIR /home/soccer
-RUN sudo apt-get install -y python-virtualenv
-RUN virtualenv agent
-ADD agent/ /home/soccer/agent/src/agent/
-RUN sudo apt-get install -y liblapack-dev libatlas-dev gfortran
-RUN /home/soccer/agent/bin/pip install -r /home/soccer/agent/src/agent/requirements.txt

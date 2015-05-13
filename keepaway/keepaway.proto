@@ -1,4 +1,4 @@
-package prototest;
+package keepaway;
 
 message StepIn {
     required double reward = 1;

@@ -1,6 +1,6 @@
-ipython==3.0.0
-numpy==1.9.2
-mock==1.0.1
-pdbpp==0.8.2
-protobuf==2.6.1
-Theano==0.7.0rc2
+ipython
+numpy
+mock
+pdbpp
+protobuf
+Theano
