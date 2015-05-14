@@ -288,7 +288,7 @@ int main( int argc, char * argv[] )
   int numFeatures = wm.keeperStateRangesAndResolutions( ranges, minValues, resolutions,
                                                         iNumKeepers, iNumTakers );
   int numActions = iNumKeepers;
-
+  cout << strPolicy << endl;
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
     /*
     // (l)earned

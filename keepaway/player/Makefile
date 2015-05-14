@@ -6,7 +6,7 @@ YACC = bison
 
 SRC_DIR = .
 DST_DIR = .
-TARGET  = keepaway_player2
+TARGET  = keepaway_player
 
 # ==== INCLUDES =================================================
 
@@ -44,38 +44,38 @@ CLIBS_linux     = -lpthread -ldl -lzmq -lprotobuf
 
 # ==== SOURCES =================================================
 
-# SRCS		=	\
-# 		Connection.cc \
-# 		SenseHandler.cc \
-# 		ActHandler.cc \
-# 		SoccerTypes.cc \
-# 		Objects.cc \
-# 		WorldModel.cc \
-# 		WorldModelHighLevel.cc \
-# 		WorldModelPredict.cc \
-# 		WorldModelUpdate.cc \
-# 		WorldModelKeepaway.cc \
-# 		WorldModelSayMsgTypes.cc \
-# 		ServerSettings.cc \
-# 		PlayerSettings.cc \
-# 		GenericValues.cc \
-# 		Formations.cc \
-# 		Geometry.cc \
-# 		Parse.cc \
-# 		Logger.cc \
-# 		LoggerDraw.cc \
-# 		keepaway.pb.cc \
+SRCS		=	\
+		Connection.cc \
+		SenseHandler.cc \
+		ActHandler.cc \
+		SoccerTypes.cc \
+		Objects.cc \
+		WorldModel.cc \
+		WorldModelHighLevel.cc \
+		WorldModelPredict.cc \
+		WorldModelUpdate.cc \
+		WorldModelKeepaway.cc \
+		WorldModelSayMsgTypes.cc \
+		ServerSettings.cc \
+		PlayerSettings.cc \
+		GenericValues.cc \
+		Formations.cc \
+		Geometry.cc \
+		Parse.cc \
+		Logger.cc \
+		LoggerDraw.cc \
+		keepaway.pb.cc \
 
-# SRCS_PLAYER 	= ${SRCS} \
-# 		BasicPlayer.cc \
-# 		KeepawayPlayer.cc \
-# 		HandCodedAgent.cc \
-# 		LearningAgent.cc \
-# 		tiles2.cc \
-# 		LinearSarsaAgent.cc \
-# 		main.cc
+SRCS_PLAYER 	= ${SRCS} \
+		BasicPlayer.cc \
+		KeepawayPlayer.cc \
+		HandCodedAgent.cc \
+		LearningAgent.cc \
+		tiles2.cc \
+		LinearSarsaAgent.cc \
+		main.cc
 
-SRCS_PLAYER = test.cc keepaway.pb.cc
+# SRCS_PLAYER = test.cc keepaway.pb.cc
 
 OBJS_PLAYER	= $(SRCS_PLAYER:.cc=.o)
 
@@ -91,7 +91,7 @@ all::	$(TARGET) demo_extension.so
 demo_extension.so: DemoExtension.cc
 	$(COMPILE) -fPIC -shared -o demo_extension.so DemoExtension.cc
 
-keepaway_player2: $(OBJS_PLAYER)
+keepaway_player: $(OBJS_PLAYER)
 	$(COMPILE) -o  $@ $(OBJS_PLAYER) ${CFLAGS_LIBS}
 
 update:

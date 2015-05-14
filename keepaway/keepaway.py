@@ -121,7 +121,7 @@ def launch_server(options):
     # Hardcoded settings for keepaway play.
     server_options += [('forbid_kick_off_offside', 0)]
     server_options += [('half_time', -1)]
-    
+
     # Either keepaway or trainer mode. Field size.
     server_options += [('keepaway', int(not options.coach))]
     server_options += [('keepaway_start', options.game_start)]
@@ -259,7 +259,7 @@ def parse_options(args = None, **defaults):
         # Allow --keeper-policy=ext=./whatever.so, so remove choices.
         # TODO Nicer syntax for extensions?
         #type = 'choice', choices = ['hand', 'hold', 'learned', 'rand'],
-        default = 'rand',
+        default = 'learned',
         help = "The policy for the keepers to follow.")
     parser.add_option(
         "--label", default = "",

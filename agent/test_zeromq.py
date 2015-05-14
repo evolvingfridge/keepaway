@@ -34,12 +34,14 @@ stepIn = StepIn()
 stepOut = StepOut()
 
 while True:
+    print('Receiving')
     message = socket.recv()
     stepIn.ParseFromString(message)
     print("Received [ reward={}, step={} ]".format(stepIn.reward, stepIn.state))
 
-    stepOut.action = random.randint(1, 10)
+    stepOut.action = random.randint(1, 3)
     out = stepOut.SerializeToString()
     # socket.send(b"Hello")
     print('Sending')
     socket.send(out)
+    print('Send')
