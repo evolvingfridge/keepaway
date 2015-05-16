@@ -37,9 +37,11 @@ void protobuf_AssignDesc_keepaway_2eproto() {
       "keepaway.proto");
   GOOGLE_CHECK(file != NULL);
   StepIn_descriptor_ = file->message_type(0);
-  static const int StepIn_offsets_[2] = {
+  static const int StepIn_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StepIn, reward_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StepIn, state_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StepIn, episode_end_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StepIn, player_pid_),
   };
   StepIn_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -101,9 +103,10 @@ void protobuf_AddDesc_keepaway_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\016keepaway.proto\022\010keepaway\"+\n\006StepIn\022\016\n\006"
-    "reward\030\001 \002(\001\022\021\n\005state\030\002 \003(\001B\002\020\001\"\031\n\007StepO"
-    "ut\022\016\n\006action\030\001 \002(\005", 98);
+    "\n\016keepaway.proto\022\010keepaway\"T\n\006StepIn\022\016\n\006"
+    "reward\030\001 \002(\001\022\021\n\005state\030\002 \003(\001B\002\020\001\022\023\n\013episo"
+    "de_end\030\003 \002(\010\022\022\n\nplayer_pid\030\004 \002(\005\"\031\n\007Step"
+    "Out\022\016\n\006action\030\001 \002(\005", 139);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "keepaway.proto", &protobuf_RegisterTypes);
   StepIn::default_instance_ = new StepIn();
@@ -125,6 +128,8 @@ struct StaticDescriptorInitializer_keepaway_2eproto {
 #ifndef _MSC_VER
 const int StepIn::kRewardFieldNumber;
 const int StepIn::kStateFieldNumber;
+const int StepIn::kEpisodeEndFieldNumber;
+const int StepIn::kPlayerPidFieldNumber;
 #endif  // !_MSC_VER
 
 StepIn::StepIn()
@@ -146,6 +151,8 @@ StepIn::StepIn(const StepIn& from)
 void StepIn::SharedCtor() {
   _cached_size_ = 0;
   reward_ = 0;
+  episode_end_ = false;
+  player_pid_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -181,7 +188,24 @@ StepIn* StepIn::New() const {
 }
 
 void StepIn::Clear() {
-  reward_ = 0;
+#define OFFSET_OF_FIELD_(f) (reinterpret_cast<char*>(      \
+  &reinterpret_cast<StepIn*>(16)->f) - \
+   reinterpret_cast<char*>(16))
+
+#define ZR_(first, last) do {                              \
+    size_t f = OFFSET_OF_FIELD_(first);                    \
+    size_t n = OFFSET_OF_FIELD_(last) - f + sizeof(last);  \
+    ::memset(&first, 0, n);                                \
+  } while (0)
+
+  if (_has_bits_[0 / 32] & 13) {
+    ZR_(episode_end_, player_pid_);
+    reward_ = 0;
+  }
+
+#undef OFFSET_OF_FIELD_
+#undef ZR_
+
   state_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -222,6 +246,36 @@ bool StepIn::MergePartialFromCodedStream(
           DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
                    double, ::google::protobuf::internal::WireFormatLite::TYPE_DOUBLE>(
                  1, 18, input, this->mutable_state())));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(24)) goto parse_episode_end;
+        break;
+      }
+
+      // required bool episode_end = 3;
+      case 3: {
+        if (tag == 24) {
+         parse_episode_end:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &episode_end_)));
+          set_has_episode_end();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(32)) goto parse_player_pid;
+        break;
+      }
+
+      // required int32 player_pid = 4;
+      case 4: {
+        if (tag == 32) {
+         parse_player_pid:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &player_pid_)));
+          set_has_player_pid();
         } else {
           goto handle_unusual;
         }
@@ -269,6 +323,16 @@ void StepIn::SerializeWithCachedSizes(
       this->state(i), output);
   }
 
+  // required bool episode_end = 3;
+  if (has_episode_end()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(3, this->episode_end(), output);
+  }
+
+  // required int32 player_pid = 4;
+  if (has_player_pid()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->player_pid(), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -298,6 +362,16 @@ void StepIn::SerializeWithCachedSizes(
       WriteDoubleNoTagToArray(this->state(i), target);
   }
 
+  // required bool episode_end = 3;
+  if (has_episode_end()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(3, this->episode_end(), target);
+  }
+
+  // required int32 player_pid = 4;
+  if (has_player_pid()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->player_pid(), target);
+  }
+
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -313,6 +387,18 @@ int StepIn::ByteSize() const {
     // required double reward = 1;
     if (has_reward()) {
       total_size += 1 + 8;
+    }
+
+    // required bool episode_end = 3;
+    if (has_episode_end()) {
+      total_size += 1 + 1;
+    }
+
+    // required int32 player_pid = 4;
+    if (has_player_pid()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->player_pid());
     }
 
   }
@@ -360,6 +446,12 @@ void StepIn::MergeFrom(const StepIn& from) {
     if (from.has_reward()) {
       set_reward(from.reward());
     }
+    if (from.has_episode_end()) {
+      set_episode_end(from.episode_end());
+    }
+    if (from.has_player_pid()) {
+      set_player_pid(from.player_pid());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -377,7 +469,7 @@ void StepIn::CopyFrom(const StepIn& from) {
 }
 
 bool StepIn::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+  if ((_has_bits_[0] & 0x0000000d) != 0x0000000d) return false;
 
   return true;
 }
@@ -386,6 +478,8 @@ void StepIn::Swap(StepIn* other) {
   if (other != this) {
     std::swap(reward_, other->reward_);
     state_.Swap(&other->state_);
+    std::swap(episode_end_, other->episode_end_);
+    std::swap(player_pid_, other->player_pid_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

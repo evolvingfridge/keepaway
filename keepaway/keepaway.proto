@@ -3,6 +3,8 @@ package keepaway;
 message StepIn {
     required double reward = 1;
     repeated double state = 2 [packed = true];
+    required bool episode_end = 3;
+    required int32 player_pid = 4;
 }
 
 message StepOut {

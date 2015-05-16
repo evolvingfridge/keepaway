@@ -305,8 +305,8 @@ int main( int argc, char * argv[] )
     // Done setting up.
     sa = linearSarsaAgent;
     */
-    sa = new LearningAgent( numFeatures, numActions,
-                            bLearn, loadWeightsFile, saveWeightsFile );
+    sa = new LearningAgent( numFeatures, numActions/*,
+                            bLearn, loadWeightsFile, saveWeightsFile */);
   } else if (!strncmp(strPolicy, "ext=", 4)) {
     // Load extension.
     // Name should come after "ext=". Yes, this is hackish.

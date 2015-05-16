@@ -13,11 +13,9 @@ class LearningAgent:public SMDPAgent
     public:
         LearningAgent(
             int numFeatures,
-            int numActions,
-            bool learning,
-            char *loadWeightsFile,
-            char *saveWeightsFile
+            int numActions
         );
+
         ~LearningAgent();
 
         int  startEpisode( double state[] );
@@ -27,3 +25,8 @@ class LearningAgent:public SMDPAgent
 } ;
 
 #endif
+
+        /*
+            bool learning,
+            char *loadWeightsFile,
+            char *saveWeightsFile*/

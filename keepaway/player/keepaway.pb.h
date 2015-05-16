@@ -110,10 +110,28 @@ class StepIn : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedField< double >*
       mutable_state();
 
+  // required bool episode_end = 3;
+  inline bool has_episode_end() const;
+  inline void clear_episode_end();
+  static const int kEpisodeEndFieldNumber = 3;
+  inline bool episode_end() const;
+  inline void set_episode_end(bool value);
+
+  // required int32 player_pid = 4;
+  inline bool has_player_pid() const;
+  inline void clear_player_pid();
+  static const int kPlayerPidFieldNumber = 4;
+  inline ::google::protobuf::int32 player_pid() const;
+  inline void set_player_pid(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:keepaway.StepIn)
  private:
   inline void set_has_reward();
   inline void clear_has_reward();
+  inline void set_has_episode_end();
+  inline void clear_has_episode_end();
+  inline void set_has_player_pid();
+  inline void clear_has_player_pid();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -122,6 +140,8 @@ class StepIn : public ::google::protobuf::Message {
   double reward_;
   ::google::protobuf::RepeatedField< double > state_;
   mutable int _state_cached_byte_size_;
+  bool episode_end_;
+  ::google::protobuf::int32 player_pid_;
   friend void  protobuf_AddDesc_keepaway_2eproto();
   friend void protobuf_AssignDesc_keepaway_2eproto();
   friend void protobuf_ShutdownFile_keepaway_2eproto();
@@ -267,6 +287,54 @@ inline ::google::protobuf::RepeatedField< double >*
 StepIn::mutable_state() {
   // @@protoc_insertion_point(field_mutable_list:keepaway.StepIn.state)
   return &state_;
+}
+
+// required bool episode_end = 3;
+inline bool StepIn::has_episode_end() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void StepIn::set_has_episode_end() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void StepIn::clear_has_episode_end() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline void StepIn::clear_episode_end() {
+  episode_end_ = false;
+  clear_has_episode_end();
+}
+inline bool StepIn::episode_end() const {
+  // @@protoc_insertion_point(field_get:keepaway.StepIn.episode_end)
+  return episode_end_;
+}
+inline void StepIn::set_episode_end(bool value) {
+  set_has_episode_end();
+  episode_end_ = value;
+  // @@protoc_insertion_point(field_set:keepaway.StepIn.episode_end)
+}
+
+// required int32 player_pid = 4;
+inline bool StepIn::has_player_pid() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void StepIn::set_has_player_pid() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void StepIn::clear_has_player_pid() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline void StepIn::clear_player_pid() {
+  player_pid_ = 0;
+  clear_has_player_pid();
+}
+inline ::google::protobuf::int32 StepIn::player_pid() const {
+  // @@protoc_insertion_point(field_get:keepaway.StepIn.player_pid)
+  return player_pid_;
+}
+inline void StepIn::set_player_pid(::google::protobuf::int32 value) {
+  set_has_player_pid();
+  player_pid_ = value;
+  // @@protoc_insertion_point(field_set:keepaway.StepIn.player_pid)
 }
 
 // -------------------------------------------------------------------

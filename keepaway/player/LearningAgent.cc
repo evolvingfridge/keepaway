@@ -18,13 +18,10 @@ using namespace std;
    can be added to the constructor.  For example:
 */
 LearningAgent::LearningAgent(
-    int numFeatures,
-    int numActions,
-    bool learning,
-    char *loadWeightsFile,
-    char *saveWeightsFile
+    int numFeatures, int numActions
 ): SMDPAgent( numFeatures, numActions )
 {
+    std::cout << "[" << ::getpid() <<  "] init" << std::endl;
     //  Prepare our context and socket
     // zmq::context_t context (1);
     // zmq::socket_t socket (context, ZMQ_REP);
@@ -68,6 +65,7 @@ void LearningAgent::endEpisode( double reward )
 
 int LearningAgent::selectAction( double reward, double state[], bool wait4action)
 {
+    /*
     std::cout << "[" << ::getpid() <<  "] select action" << std::endl;
     keepaway::StepIn stepIn;
     stepIn.set_reward(reward);
@@ -98,4 +96,6 @@ int LearningAgent::selectAction( double reward, double state[], bool wait4action
     // }
     std::cout << "[" << ::getpid() <<  "] end " << action << std::endl;
     return action;
+    */
+    return 0;
 }

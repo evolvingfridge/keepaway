@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='keepaway.proto',
   package='keepaway',
-  serialized_pb=_b('\n\x0ekeepaway.proto\x12\x08keepaway\"+\n\x06StepIn\x12\x0e\n\x06reward\x18\x01 \x02(\x01\x12\x11\n\x05state\x18\x02 \x03(\x01\x42\x02\x10\x01\"\x19\n\x07StepOut\x12\x0e\n\x06\x61\x63tion\x18\x01 \x02(\x05')
+  serialized_pb=_b('\n\x0ekeepaway.proto\x12\x08keepaway\"T\n\x06StepIn\x12\x0e\n\x06reward\x18\x01 \x02(\x01\x12\x11\n\x05state\x18\x02 \x03(\x01\x42\x02\x10\x01\x12\x13\n\x0b\x65pisode_end\x18\x03 \x02(\x08\x12\x12\n\nplayer_pid\x18\x04 \x02(\x05\"\x19\n\x07StepOut\x12\x0e\n\x06\x61\x63tion\x18\x01 \x02(\x05')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -46,6 +46,20 @@ _STEPIN = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=_descriptor._ParseOptions(descriptor_pb2.FieldOptions(), _b('\020\001'))),
+    _descriptor.FieldDescriptor(
+      name='episode_end', full_name='keepaway.StepIn.episode_end', index=2,
+      number=3, type=8, cpp_type=7, label=2,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='player_pid', full_name='keepaway.StepIn.player_pid', index=3,
+      number=4, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -58,7 +72,7 @@ _STEPIN = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=28,
-  serialized_end=71,
+  serialized_end=112,
 )
 
 
@@ -87,8 +101,8 @@ _STEPOUT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=73,
-  serialized_end=98,
+  serialized_start=114,
+  serialized_end=139,
 )
 
 DESCRIPTOR.message_types_by_name['StepIn'] = _STEPIN
