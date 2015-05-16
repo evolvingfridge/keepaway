@@ -1,56 +1,68 @@
-import random
+import argparse
 
-from .environment import PLAYER_X, EMPTY
+import zmq
+from keepaway_pb2 import StepIn, StepOut
+
 from dql.dql_agent import DQLAgent
 
+parser = argparse.ArgumentParser(description='DQL Agent.')
+parser.add_argument('--network-architecture', metavar='N', type=int, nargs='+',
+                    help='Deep Network architecture')
+parser.add_argument('--train', dest='train', action='store_true',
+                    default=True, help='Train network?')
+parser.add_argument('--minibatch-size', type=int)
+parser.add_argument('--transitions-history-size', type=int)
+parser.add_argument('--recent-states-to-network', type=int)
+parser.add_argument('--discount-factor', type=float)
+parser.add_argument('--learning-rate', type=float)
 
-class Agent(object):
-    def start_episode(self, *args, **kwargs):
-        """
-        Notification about beginning of the next episode
-        """
-        pass
-
-    def step(self, reward, current_state, *args, **kwargs):
-        """
-        Return action for current state.
-
-        :param reward: reward for previous move
-        :type reward: int
-
-        :param current_state: current state of the game
-        :type current_state: np.array
-
-        :returns: action index
-        :rtype: int
-        """
-        pass
-
-    def end_episode(self, reward, *args, **kwargs):
-        """
-        Notification about end of episode (single game over).
-
-        :param reward: reward for previous move
-        :type reward: int
-        """
-        pass
+args = parser.parse_args()
 
 
-class TicTacToeAgent(Agent):
-    def start_episode(self, marker=PLAYER_X):
-        self.current_marker = marker
+def main():
+    context = zmq.Context()
+    print("Starting keepaway agent server...")
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://*:5558")
+
+    stepIn = StepIn()
+    stepOut = StepOut()
+
+    agent_kwargs = {k: v for (k, v) in args._get_kwargs() if v is not None}
+
+    agents = [DQLAgent(**agent_kwargs), DQLAgent(**agent_kwargs), DQLAgent(**agent_kwargs)]
+    pid2id = {}
+    current_id = 0
+
+    while True:
+        print('Receiving')
+        message = socket.recv()
+        stepIn.ParseFromString(message)
+        print("Received [ reward={}, state={}, pid={}, end={} ]".format(stepIn.reward, stepIn.state, stepIn.player_pid, stepIn.episode_end))
+
+        if stepIn.player_pid not in pid2id:
+            pid2id[stepIn.player_pid] = current_id
+            current_id += 1
+
+        agent = agents[pid2id[stepIn.player_pid]]
+
+        # start episode
+        if stepIn.reward == -1:
+            print('\n')
+            print('=' * 20)
+            print('startEpisode')
+            action = agent.start_episode(reward=0, current_state=stepIn.state)
+        elif stepIn.episode_end:
+            agent.end_episode(stepIn.reward)
+            action = 0
+        else:
+            action = agent.step(reward=stepIn.reward, current_state=stepIn.state)
+        stepOut.action = action
+        out = stepOut.SerializeToString()
+        print('Sending')
+        socket.send(out)
+        print('Send')
 
 
-class RandomAgent(TicTacToeAgent):
-    def next_move(self, board):
-        empty_positions = []
-        for row in range(len(board)):
-            for col in range(len(board)):
-                if board[row][col] == EMPTY:
-                    empty_positions.append((row, col))
-        rand = random.randint(0, len(empty_positions) - 1)
-        return empty_positions[rand]
-
-
-class TicTacToeDQLAgent(DQLAgent, TicTacToeAgent):
-    pass
+if __name__ == '__main__':
+    main()

@@ -40,6 +40,9 @@ class DQLAgent(object):
     def __init__(self, **kwargs):
         for kw_name, kw_val in kwargs.iteritems():
             setattr(self, kw_name, kw_val)
+        self.number_of_actions = self.network_architecture[-1]
+        self.state_size = self.network_architecture[0]
+
         self.memory = TransitionTable(
             self.transitions_history_size,
             state_size=self.state_size,
