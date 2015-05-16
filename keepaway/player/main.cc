@@ -57,6 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ActHandler.h"
 #include "KeepawayPlayer.h"
 #include "HandCodedAgent.h"
+#include "HandCodedAgent2.h"
 #include "LinearSarsaAgent.h"
 #include "LearningAgent.h"
 
@@ -288,63 +289,70 @@ int main( int argc, char * argv[] )
   int numFeatures = wm.keeperStateRangesAndResolutions( ranges, minValues, resolutions,
                                                         iNumKeepers, iNumTakers );
   int numActions = iNumKeepers;
-  cout << strPolicy << endl;
-  if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
-    /*
-    // (l)earned
-    // or "learned!" -> Don't explore at all.
-    LinearSarsaAgent* linearSarsaAgent = new LinearSarsaAgent(
-      numFeatures, numActions, bLearn, resolutions,
-      loadWeightsFile, saveWeightsFile, hiveMind
-    );
-    // Check for pure exploitation mode.
-    size_t length = strlen(strPolicy);
-    if (strPolicy[length - 1] == '!') {
-      linearSarsaAgent->setEpsilon(0.0);
+  cout << strPolicy << " " << strTeamName << endl;
+
+  // takers
+  if ( strlen( strTeamName ) > 0 && strTeamName[0] == 't' ) {
+        sa = new HandCodedAgent2( numFeatures, numActions, strPolicy, &wm );
+  }
+  else{
+    if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
+        /*
+        // (l)earned
+        // or "learned!" -> Don't explore at all.
+        LinearSarsaAgent* linearSarsaAgent = new LinearSarsaAgent(
+        numFeatures, numActions, bLearn, resolutions,
+        loadWeightsFile, saveWeightsFile, hiveMind
+        );
+        // Check for pure exploitation mode.
+        size_t length = strlen(strPolicy);
+        if (strPolicy[length - 1] == '!') {
+        linearSarsaAgent->setEpsilon(0.0);
+        }
+        // Done setting up.
+        sa = linearSarsaAgent;
+        */
+        sa = new LearningAgent( numFeatures, numActions/*,
+                          bLearn, loadWeightsFile, saveWeightsFile */);
+    } else if (!strncmp(strPolicy, "ext=", 4)) {
+        // Load extension.
+        // Name should come after "ext=". Yes, this is hackish.
+        char* extensionName = strPolicy + 4;
+        // These parameters are based on the expected learning agent parameters
+        // above.
+        // Added WorldModel for agents needing richer/relational representation!
+        typedef SMDPAgent* (*CreateAgent)(
+        WorldModel&, int, int, bool, double*, char*, char*, bool
+        );
+        CreateAgent createAgent = NULL;
+        #ifdef WIN32
+          // TODO
+        #else
+            // Load the extension.
+            void* extension = dlopen(extensionName, RTLD_NOW);
+            if (!extension) {
+            cerr << "Failed to load extension " << extensionName << endl;
+            cerr << dlerror() << endl;
+            return EXIT_FAILURE;
+            }
+            // Find the createAgent function.
+            createAgent =
+            reinterpret_cast<CreateAgent>(dlsym(extension, "createAgent"));
+            if (!createAgent) {
+            cerr << "Failed to find createAgent in " << extensionName << endl;
+            cerr << dlerror() << endl;
+            return EXIT_FAILURE;
+            }
+        #endif
+        sa = createAgent(
+            wm, numFeatures, numActions, bLearn, resolutions,
+            loadWeightsFile, saveWeightsFile, hiveMind
+        );
+    } else {
+        // (ha)nd (ho)ld (r)andom
+        sa = new HandCodedAgent( numFeatures, numActions,
+                               strPolicy, &wm );
     }
-    // Done setting up.
-    sa = linearSarsaAgent;
-    */
-    sa = new LearningAgent( numFeatures, numActions/*,
-                            bLearn, loadWeightsFile, saveWeightsFile */);
-  } else if (!strncmp(strPolicy, "ext=", 4)) {
-    // Load extension.
-    // Name should come after "ext=". Yes, this is hackish.
-    char* extensionName = strPolicy + 4;
-    // These parameters are based on the expected learning agent parameters
-    // above.
-    // Added WorldModel for agents needing richer/relational representation!
-    typedef SMDPAgent* (*CreateAgent)(
-      WorldModel&, int, int, bool, double*, char*, char*, bool
-    );
-    CreateAgent createAgent = NULL;
-#ifdef WIN32
-    // TODO
-#else
-    // Load the extension.
-    void* extension = dlopen(extensionName, RTLD_NOW);
-    if (!extension) {
-      cerr << "Failed to load extension " << extensionName << endl;
-      cerr << dlerror() << endl;
-      return EXIT_FAILURE;
-    }
-    // Find the createAgent function.
-    createAgent =
-      reinterpret_cast<CreateAgent>(dlsym(extension, "createAgent"));
-    if (!createAgent) {
-      cerr << "Failed to find createAgent in " << extensionName << endl;
-      cerr << dlerror() << endl;
-      return EXIT_FAILURE;
-    }
-#endif
-    sa = createAgent(
-      wm, numFeatures, numActions, bLearn, resolutions,
-      loadWeightsFile, saveWeightsFile, hiveMind
-    );
-  } else {
-    // (ha)nd (ho)ld (r)andom
-    sa = new HandCodedAgent( numFeatures, numActions,
-                             strPolicy, &wm );
   }
 
   if (!sa) {

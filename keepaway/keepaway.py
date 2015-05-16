@@ -314,7 +314,7 @@ def parse_options(args = None, **defaults):
         '--taker-output',
         help = "Output (file) name for taker policy agent.")
     parser.add_option(
-        '--taker-policy', default = 'hand',
+        '--taker-policy', default = 'rand',
         # Allow --keeper-policy=ext=./whatever.so, so remove choices.
         # TODO Nicer syntax for extensions?
         #type = 'choice', choices = ['hand', 'learned'],

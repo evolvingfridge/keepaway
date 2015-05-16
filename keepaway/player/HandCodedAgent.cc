@@ -67,7 +67,7 @@ HandCodedAgent::~HandCodedAgent()
 int HandCodedAgent::startEpisode( double state[] )
 {
     std::cout << "[" << ::getpid() <<  "] start episode" << std::endl;
-    return step( 0 , state );
+    return step( -1 , state );
 }
 
 int HandCodedAgent::step( double reward, double state[] )

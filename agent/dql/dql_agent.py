@@ -22,11 +22,11 @@ class DQLAgent(object):
     # start learn after X frames
     start_learn_after = 5*(10**4)
     # network architecture (first layer is number of inputs, last is number of actions)
-    network_architecture = [9, 30, 30, 9]
+    network_architecture = [13, 30, 30, 3]
     # possible number of actions
-    number_of_actions = 9
+    number_of_actions = 3
     # state size
-    state_size = 9
+    state_size = 13
     # if training mode
     train = False
 
@@ -53,7 +53,7 @@ class DQLAgent(object):
         )
         self.frames_played = 0
         self.scores = []
-        # self._init_new_game()
+        self._init_new_game()
 
     def _init_new_game(self):
         self.last_state = None
@@ -91,6 +91,7 @@ class DQLAgent(object):
     def start_episode(self, *args, **kwargs):
         # super(DQLAgent, self).start_episode(*args, **kwargs)
         self._init_new_game()
+        return self.step(*args, **kwargs)
 
     def step(self, reward, current_state, *args, **kwargs):
         # super(DQLAgent, self).step(reward, current_state, *args, **kwargs)
@@ -102,7 +103,8 @@ class DQLAgent(object):
         self.last_state = current_state
         return self.last_action
 
-    def game_over(self, reward, *args, **kwargs):
+    def end_episode(self, reward, *args, **kwargs):
         # super(DQLAgent, self).game_over(reward, *args, **kwargs)
-        self._remember_in_memory(reward, True)
+        if self.last_state is not None:
+            self._remember_in_memory(reward, True)
         self.scores.append(self.current_game_total_reward)

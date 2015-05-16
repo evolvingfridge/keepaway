@@ -70,6 +70,7 @@ SRCS_PLAYER 	= ${SRCS} \
 		BasicPlayer.cc \
 		KeepawayPlayer.cc \
 		HandCodedAgent.cc \
+		HandCodedAgent2.cc \
 		LearningAgent.cc \
 		tiles2.cc \
 		LinearSarsaAgent.cc \
