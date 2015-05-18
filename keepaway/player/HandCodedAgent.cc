@@ -66,19 +66,19 @@ HandCodedAgent::~HandCodedAgent()
 
 int HandCodedAgent::startEpisode( double state[] )
 {
-    std::cout << "[" << ::getpid() <<  "] start episode" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] start episode" << std::endl;
     return step( -1 , state );
 }
 
 int HandCodedAgent::step( double reward, double state[] )
 {
-    std::cout << "[" << ::getpid() <<  "] step" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] step" << std::endl;
     return getAction(reward, state, false, getNumFeatures());
 }
 
 void HandCodedAgent::endEpisode( double reward )
 {
-    std::cout << "[" << ::getpid() <<  "] end episode" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] end episode" << std::endl;
     // Do nothing
     double state[0];
     // for ( int v = 0; v < getNumFeatures(); v++ ) {
@@ -91,7 +91,7 @@ void HandCodedAgent::endEpisode( double reward )
 
 int HandCodedAgent::getAction( double reward, double state[], bool end, int features)
 {
-    std::cout << "[" << ::getpid() <<  "] select action" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] select action" << std::endl;
 
     // send reward and state
     keepaway::StepIn stepIn;
@@ -104,21 +104,21 @@ int HandCodedAgent::getAction( double reward, double state[], bool end, int feat
     std::string buf;
     stepIn.SerializeToString(&buf);
     zmq::message_t request (buf.size());
-    std::cout << "[" << ::getpid() <<  "] sending" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] sending" << std::endl;
     memcpy ((void *) request.data(), buf.c_str(), buf.size());
     zmq_socket->send(request);
-    std::cout << "[" << ::getpid() <<  "] send" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] send" << std::endl;
 
     // receive action
     int action = 0;
     keepaway::StepOut stepOut;
     zmq::message_t reply;
-    std::cout << "[" << ::getpid() <<  "] receiving" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] receiving" << std::endl;
     zmq_socket->recv (&reply);
-    std::cout << "[" << ::getpid() <<  "] received" << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] received" << std::endl;
     std::string rpl = std::string(static_cast<char*>(reply.data()), reply.size());
     stepOut.ParseFromString(rpl);
     action = stepOut.action();
-    std::cout << "[" << ::getpid() <<  "] end " << action << std::endl;
+    // std::cout << "[" << ::getpid() <<  "] end " << action << std::endl;
     return action;
 }

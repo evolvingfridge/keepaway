@@ -1,8 +1,11 @@
 soccer:
     build: .
     volumes:
-        - keepaway/:/home/soccer/keepaway
-        - agent/:/home/soccer/agent/src/agent
+        - keepaway/:/home/soccer/keepaway  # tmp
+        - agent/:/home/soccer/agent/src/agent  # tmp
         - logs/:/home/soccer/logs
+        - run.sh:/home/soccer/run.sh
+        - start.sh:/home/soccer/start.sh
+        - run_dql.sh:/home/soccer/run_dql.sh
         # - .rcssserver:/home/soccer/.rcssserver
-    command: /bin/bash  # CHANGE LATER
+    #command: /bin/bash  # CHANGE LATER

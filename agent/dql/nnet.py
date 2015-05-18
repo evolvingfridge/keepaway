@@ -1,4 +1,5 @@
 # neural net based on http://deeplearning.net/tutorial/code/mlp.py
+import logging
 
 import theano
 import numpy as np
@@ -6,6 +7,8 @@ import theano.tensor as T
 
 theano.config.openmp = False  # they say that using openmp becomes efficient only with "very large scale convolution"
 theano.config.floatX = 'float32'
+
+logger = logging.getLogger('keepaway')
 
 
 class Layer(object):
@@ -222,4 +225,5 @@ class NeuralNet(object):
         Returns the action with the highest Q-value
         """
         q_values = self.predict([state])[0]
+        logger.debug('Q values: {}'.format(q_values))
         return np.argmax(q_values)
