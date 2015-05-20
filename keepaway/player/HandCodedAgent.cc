@@ -95,6 +95,7 @@ int HandCodedAgent::getAction( double reward, double state[], bool end, int feat
 
     // send reward and state
     keepaway::StepIn stepIn;
+    stepIn.set_current_time(WM->getCurrentCycle());
     stepIn.set_reward(reward);
     for ( int v = 0; v < features; v++ ) {
         stepIn.add_state(state[v]);

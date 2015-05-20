@@ -124,6 +124,13 @@ class StepIn : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 player_pid() const;
   inline void set_player_pid(::google::protobuf::int32 value);
 
+  // required double current_time = 5;
+  inline bool has_current_time() const;
+  inline void clear_current_time();
+  static const int kCurrentTimeFieldNumber = 5;
+  inline double current_time() const;
+  inline void set_current_time(double value);
+
   // @@protoc_insertion_point(class_scope:keepaway.StepIn)
  private:
   inline void set_has_reward();
@@ -132,6 +139,8 @@ class StepIn : public ::google::protobuf::Message {
   inline void clear_has_episode_end();
   inline void set_has_player_pid();
   inline void clear_has_player_pid();
+  inline void set_has_current_time();
+  inline void clear_has_current_time();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -142,6 +151,7 @@ class StepIn : public ::google::protobuf::Message {
   mutable int _state_cached_byte_size_;
   bool episode_end_;
   ::google::protobuf::int32 player_pid_;
+  double current_time_;
   friend void  protobuf_AddDesc_keepaway_2eproto();
   friend void protobuf_AssignDesc_keepaway_2eproto();
   friend void protobuf_ShutdownFile_keepaway_2eproto();
@@ -335,6 +345,30 @@ inline void StepIn::set_player_pid(::google::protobuf::int32 value) {
   set_has_player_pid();
   player_pid_ = value;
   // @@protoc_insertion_point(field_set:keepaway.StepIn.player_pid)
+}
+
+// required double current_time = 5;
+inline bool StepIn::has_current_time() const {
+  return (_has_bits_[0] & 0x00000010u) != 0;
+}
+inline void StepIn::set_has_current_time() {
+  _has_bits_[0] |= 0x00000010u;
+}
+inline void StepIn::clear_has_current_time() {
+  _has_bits_[0] &= ~0x00000010u;
+}
+inline void StepIn::clear_current_time() {
+  current_time_ = 0;
+  clear_has_current_time();
+}
+inline double StepIn::current_time() const {
+  // @@protoc_insertion_point(field_get:keepaway.StepIn.current_time)
+  return current_time_;
+}
+inline void StepIn::set_current_time(double value) {
+  set_has_current_time();
+  current_time_ = value;
+  // @@protoc_insertion_point(field_set:keepaway.StepIn.current_time)
 }
 
 // -------------------------------------------------------------------

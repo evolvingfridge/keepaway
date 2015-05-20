@@ -8,3 +8,4 @@ player/Makefile.bak
 /tools/hist
 /tools/kwyzipper
 /tools/winsum
+agent.env

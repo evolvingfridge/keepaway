@@ -95,10 +95,7 @@ RUN cd player && make depend && make
 RUN cd tools && make
 
 RUN mkdir -p "/home/soccer/~/.rcssserver"
-RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -y supervisor
-RUN sudo pip install supervisor-stdout
 
-ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ADD run_dql.sh /home/soccer/run_dql.sh
 ADD run.sh /home/soccer/run.sh
 ADD start.sh /home/soccer/start.sh

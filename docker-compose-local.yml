@@ -1,0 +1,12 @@
+soccer:
+    build: .
+    env_file: agent.env
+    volumes:
+        - keepaway/:/home/soccer/keepaway  # tmp
+        - agent/:/home/soccer/agent/src/agent  # tmp
+        - logs/:/home/soccer/logs
+        - run.sh:/home/soccer/run.sh  # tmp
+        - start.sh:/home/soccer/start.sh  # tmp
+        - run_dql.sh:/home/soccer/run_dql.sh  # tmp
+        # - .rcssserver:/home/soccer/.rcssserver
+    #command: /bin/bash  # CHANGE LATER

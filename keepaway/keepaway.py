@@ -39,7 +39,9 @@ def launch_player(player_type, index, options):
         q = getattr(options, player_type + '_policy'),
         t = player_type + 's', # Pluralize for team name. TODO Really?
         x = options.stop_after,
-        y = options.start_learning_after)
+        y = options.start_learning_after,
+        # l = "1..1000",
+    )
 
     # Handle optional args.
     def put_player_file(key, name):

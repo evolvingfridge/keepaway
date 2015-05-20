@@ -39,8 +39,8 @@ parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='
 parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar='EVALUATION_EPSILON')
 
 # other params
-parser.add_argument('--evaluate-agent-each', type=int, default=10000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
-parser.add_argument('--evaluation-episodes', type=int, default=200,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
+parser.add_argument('--evaluate-agent-each', type=int, default=1000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
+parser.add_argument('--evaluation-episodes', type=int, default=100,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
 
 args = parser.parse_args()
 
@@ -50,15 +50,16 @@ file_params = (
 )
 
 # logging
+logging_level = logging.WARNING
 logger = logging.getLogger('keepaway')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging_level)
 # create file handler which logs even debug messages
 
 fh = logging.FileHandler(os.path.expanduser('~/logs/agent-{}-{}.log'.format(*file_params)))
-fh.setLevel(logging.DEBUG)
+fh.setLevel(logging_level)
 # create console handler with a higher log level
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging_level)
 # create formatter and add it to the handlers
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -68,6 +69,7 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 # save networks file
+network_filepath = os.path.expanduser('~/logs/networks-{}-{}.log'.format(*file_params))
 
 
 def main():
@@ -81,7 +83,7 @@ def main():
 
     agent_kwargs = {k: v for (k, v) in args._get_kwargs() if v is not None}
 
-    agents = [DQLAgent(**agent_kwargs), DQLAgent(**agent_kwargs), DQLAgent(**agent_kwargs)]
+    agent = DQLAgent(**agent_kwargs)
     pid2id = {}
     current_id = 0
 
@@ -94,38 +96,53 @@ def main():
         logger.debug('=' * 40)
         message = socket.recv()
         stepIn.ParseFromString(message)
-        logger.debug("Received [ reward={}, state={}, pid={}, end={} ]".format(
-            stepIn.reward, stepIn.state, stepIn.player_pid, stepIn.episode_end
+        logger.debug("Received [ reward={}, state={}, pid={}, end={}, current_time={} ]".format(
+            stepIn.reward, stepIn.state, stepIn.player_pid, stepIn.episode_end, stepIn.current_time
         ))
 
         if stepIn.player_pid not in pid2id:
             pid2id[stepIn.player_pid] = current_id
             current_id += 1
 
-        agent = agents[pid2id[stepIn.player_pid]]
-
         # start episode
         if stepIn.reward == -1:
-            action = agent.start_episode(reward=0, current_state=stepIn.state)
+            action = agent.start_episode(
+                current_time=stepIn.current_time,
+                current_state=stepIn.state
+            )
         elif stepIn.episode_end:
-            agent.end_episode(stepIn.reward)
+            agent.end_episode(current_time=stepIn.current_time)
             action = 0
             episodes_count += 1
 
             # evaluation
-            if (episodes_count / 3) % args.evaluate_agent_each == 0:
-                evaluation = True
-                for agent in agents:
-                    agent.train = False
             if evaluation:
                 evaluation_episodes_count += 1
-            if (evaluation_episodes_count / 3) % args.evaluation_episodes == 0:
+            if episodes_count > 0 and (episodes_count / 3.0) % args.evaluate_agent_each == 0:
+                logger.debug('Starting evaluation at {}'.format(episodes_count))
+                evaluation = True
+                agent.train = False
+            if evaluation_episodes_count / 3.0 == args.evaluation_episodes:
+                logger.debug('Evaluation end at {} (total: {})'.format(evaluation_episodes_count, episodes_count))
                 evaluation = False
-                for agent in agents:
-                    agent.train = True
+                agent.train = True
+                evaluation_episodes_count = 0
+                # save current network
+                with open(network_filepath, 'a') as f:
+                    f.write(agent._get_network_dump())
+                    f.write('\n\n')
+
+            if episodes_count / 3.0 % 100 == 0:
+                logger.warning('Episodes: {}...; current epsilon: {}'.format(
+                    episodes_count / 3,
+                    agent.epsilon,
+                ))
 
         else:
-            action = agent.step(reward=stepIn.reward, current_state=stepIn.state)
+            action = agent.step(
+                current_time=stepIn.current_time,
+                current_state=stepIn.state
+            )
         stepOut.action = action
         out = stepOut.SerializeToString()
         socket.send(out)

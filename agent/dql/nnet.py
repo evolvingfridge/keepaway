@@ -32,19 +32,19 @@ class Layer(object):
         # weights matrix of size n_inputs * n_nodes
         # each column (total: n_nodes) represents the weights from the input
         # units to the i-th unit
-        weights_values = np.asarray(np.random.uniform(
+        self.weights_values = np.asarray(np.random.uniform(
             high=weight_bound,
             low=-weight_bound,
             size=(n_inputs, n_nodes)
         ), dtype=theano.config.floatX)
         self.weights = theano.shared(
-            value=weights_values,
+            value=self.weights_values,
             name='weights',
             borrow=True,  # use "reference", not copy (http://deeplearning.net/software/theano/tutorial/aliasing.html#borrowing-when-creating-shared-variables)
         )
         # bias term
-        bias_values = np.zeros((n_nodes,), dtype=theano.config.floatX)
-        self.bias = theano.shared(value=bias_values, name='bias', borrow=True)
+        self.bias_values = np.zeros((n_nodes,), dtype=theano.config.floatX)
+        self.bias = theano.shared(value=self.bias_values, name='bias', borrow=True)
         # all the variables that can change during learning
         self.params = [self.weights, self.bias]
 
@@ -116,6 +116,7 @@ class NeuralNet(object):
 
         self.layers = []
         self.params = []
+        self.params_raw = []
         prev_layer = None
         prev_layer_size = None
 
@@ -132,6 +133,7 @@ class NeuralNet(object):
             prev_layer = layer
             prev_layer_size = layer_size
             self.params.extend(layer.params)
+            self.params_raw.extend((layer.weights_values, layer.bias_values))
 
         self.output_layer = layer
 

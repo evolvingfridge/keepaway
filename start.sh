@@ -2,4 +2,5 @@
 
 cd /home/soccer
 ./run.sh &
-sudo /usr/bin/supervisord
+# sudo /usr/bin/supervisord
+./run_dql.sh

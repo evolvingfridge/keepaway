@@ -1,4 +1,5 @@
 import logging
+import pickle
 import random
 
 from .states_memory import TransitionTable
@@ -24,7 +25,7 @@ class DQLAgent(object):
     final_epsilon_greedy = 0.1  # one for ten actions is random
     exploration_time = float(10**6)  # number of frames over which epsilon factor is linearly annealed to it's final value
     # start learn after X frames
-    start_learn_after = 10**3
+    start_learn_after = 10**2
     # network architecture (first layer is number of inputs, last is number of actions)
     network_architecture = [13, 30, 30, 3]
     # possible number of actions
@@ -67,7 +68,9 @@ class DQLAgent(object):
         self.frames_played = 0
         self.scores = []
         self._init_new_game()
-        logger.debug(str(self))
+        logger.warning(str(self))
+        self._episode_started = False
+        self._current_episode_start = 0
 
     def __str__(self):
         result = ['DQL config:']
@@ -101,7 +104,9 @@ class DQLAgent(object):
         if after making last action there was a terminal state.
         """
         logger.debug('Rembemering last state in memory with reward {} (is_terminal: {})'.format(reward, is_terminal))
-        self.memory.add(self.last_state, self.last_action, reward, is_terminal)
+        self.memory.add(
+            self.last_state, self.last_action, max(reward, 0), is_terminal
+        )
         self.current_game_total_reward += reward
 
     def _get_next_action(self):
@@ -120,17 +125,24 @@ class DQLAgent(object):
         self.frames_played += 1
         return action
 
+    def _get_network_dump(self):
+        return pickle.dumps(self.nnet.params_raw)
+
     # ==================================
 
-    def start_episode(self, *args, **kwargs):
+    def start_episode(self, current_time, *args, **kwargs):
         logger.debug('starting new episode')
-        self._init_new_game()
-        return self.step(*args, **kwargs)
+        if not self._episode_started:
+            self._init_new_game()
+            logger.debug('starting episode; current time: {}'.format(current_time))
+            self._episode_started = True
+            self._current_episode_start = current_time
+        return self.step(current_time=current_time, *args, **kwargs)
 
-    def step(self, reward, current_state, *args, **kwargs):
+    def step(self, current_time, current_state, *args, **kwargs):
         logger.debug('step')
         if self.last_state is not None:
-            self._remember_in_memory(reward)
+            self._remember_in_memory(current_time - self._current_episode_start)
         if self.train and self.frames_played > self.start_learn_after:
             self._train_minibatch()
         self.last_action = self._get_next_action()
@@ -138,8 +150,9 @@ class DQLAgent(object):
         logger.info('Best action: {}'.format(self.last_action))
         return self.last_action
 
-    def end_episode(self, reward, *args, **kwargs):
+    def end_episode(self, current_time, *args, **kwargs):
         logger.debug('episode end')
         if self.last_state is not None:
-            self._remember_in_memory(reward, True)
+            self._remember_in_memory(current_time - self._current_episode_start, True)
         self.scores.append(self.current_game_total_reward)
+        self._episode_started = False

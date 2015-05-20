@@ -5,6 +5,7 @@ message StepIn {
     repeated double state = 2 [packed = true];
     required bool episode_end = 3;
     required int32 player_pid = 4;
+    required double current_time = 5;
 }
 
 message StepOut {
