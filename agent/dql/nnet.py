@@ -12,7 +12,7 @@ logger = logging.getLogger('keepaway')
 
 
 class Layer(object):
-    def __init__(self, input, n_inputs, n_nodes):
+    def __init__(self, input, n_inputs, n_nodes, activation=None):
         """
         Initialize a neural network layer.
 
@@ -54,6 +54,9 @@ class Layer(object):
         # http://www.deeplearning.net/software/theano/library/tensor/basic.html#theano.tensor.dot
         # http://en.wikipedia.org/wiki/Matrix_multiplication#Inner_product
         self.output = T.dot(self.input, self.weights) + self.bias
+
+        if activation:
+            self.output = activation(self.output)
 
     def errors(self, y):
         """
@@ -171,6 +174,8 @@ class NeuralNet(object):
             },
         )
 
+        # output of network should be Q-value for an action, which is predicted
+        # sum of future rewards
         self.predict = theano.function(
             inputs=[temp_x],
             outputs=[self.output_layer.output],
@@ -186,10 +191,17 @@ class NeuralNet(object):
         Based on:
         http://nbviewer.ipython.org/github/udibr/Theano-Tutorials/blob/master/notebooks/4_modern_net.ipynb
         https://www.youtube.com/watch?v=O3sxAc4hxZU
+        http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+
+        In short, Hinton suggests "the magnitude of the gradient can be very
+        different for different weights and can change during learning. This
+        makes it hard to choose a global learning rate." RMSProp solves this
+        problem by "dividing the learning rate for a weight by a running
+        average of the magnitudes of recent gradients for that weight."
         """
         # define gradient calculation
         grads = T.grad(self.cost, self.params)
-
+        logger.debug('gradient: {}'.format(grads))
         # Define how much we need to change the parameter values
         # actual RMSProp
         updates = []
@@ -225,7 +237,7 @@ class NeuralNet(object):
             qvalues[i][action] = rewards[i] + self.discount_factor * max_qvalues[i]
         logger.debug('Updated Q-values (Q-learning): {}'.format(qvalues))
         cost = self.train(prestates, qvalues)[0]
-        logger.debug('Training cost: {}'.format(cost))
+        logger.debug('Current error: {}'.format(cost))
         return cost
 
     def predict_best_action(self, state):

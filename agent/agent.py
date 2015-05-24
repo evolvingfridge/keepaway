@@ -36,7 +36,7 @@ parser.add_argument('--discount-factor', type=float, action=EnvDefault, envvar='
 parser.add_argument('--learning-rate', type=float, action=EnvDefault, envvar='LEARNING_RATE')
 parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='START_LEARN_AFTER')
 parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar='EVALUATION_EPSILON')
-parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION-TIME')
+parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION_TIME')
 
 # other params
 parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
