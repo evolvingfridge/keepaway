@@ -22,9 +22,9 @@ class DQLAgent(object):
     learning_rate = 0.00025
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
-    final_epsilon_greedy = 0.1  # one for ten actions is random
-    exploration_time = float(10**6)  # number of frames over which epsilon factor is linearly annealed to it's final value
-    # start learn after X frames
+    final_epsilon_greedy = 0.05  # one for 20 actions is random
+    exploration_time = float(10**6)  # number of episodes over which epsilon factor is linearly annealed to it's final value
+    # start learn after X episodes
     start_learn_after = 10**2
     # network architecture (first layer is number of inputs, last is number of actions)
     network_architecture = [13, 30, 30, 3]
@@ -43,7 +43,7 @@ class DQLAgent(object):
             return self.evaluation_epsilon
         return min(
             max(
-                self.initial_epsilon_greedy - (self.frames_played - self.start_learn_after) / self.exploration_time,
+                self.initial_epsilon_greedy - (self.episodes_played - self.start_learn_after) / self.exploration_time,
                 self.final_epsilon_greedy
             ),
             1
@@ -65,12 +65,15 @@ class DQLAgent(object):
             discount_factor=self.discount_factor,
             learning_rate=self.learning_rate
         )
-        self.frames_played = 0
+        self.episodes_played = 0
         self.scores = []
-        self._init_new_game()
+        # self._init_new_game()
         logger.warning(str(self))
         self._episode_started = False
         self._current_episode_start = 0
+        self.last_state = None
+        self.last_action = None
+        self.current_game_total_reward = 0
 
     def __str__(self):
         result = ['DQL config:']
@@ -86,10 +89,12 @@ class DQLAgent(object):
 
     def _init_new_game(self):
         logger.debug('initializing new game (episode)')
-        logger.debug('Frames played so far: {}'.format(self.frames_played))
+        logger.debug('episodes played so far: {}'.format(self.episodes_played))
         self.last_state = None
         self.last_action = None
         self.current_game_total_reward = 0
+        self._episode_started = True
+        self.episodes_played += 1
         # self.memory.add(np.zeros((self.state_size,)), 0, 0, False)
 
     def _train_minibatch(self):
@@ -115,14 +120,14 @@ class DQLAgent(object):
         """
         current_state = self.memory.get_last_full_state()
         logger.debug('current epsilon: {}'.format(self.epsilon))
-        if random.uniform(0, 1) < self.epsilon or self.frames_played < self.start_learn_after:
+        if random.uniform(0, 1) < self.epsilon or self.episodes_played < self.start_learn_after:
             logger.debug('returning random action')
             action = random.choice(range(self.number_of_actions))
         else:
             logger.debug('predicting action by nnet')
             action = self.nnet.predict_best_action(current_state)
         self.last_action = action
-        self.frames_played += 1
+        # self.frames_played += 1
         return action
 
     def _get_network_dump(self):
@@ -135,7 +140,6 @@ class DQLAgent(object):
         if not self._episode_started:
             self._init_new_game()
             logger.debug('starting episode; current time: {}'.format(current_time))
-            self._episode_started = True
             self._current_episode_start = current_time
         return self.step(current_time=current_time, *args, **kwargs)
 
@@ -143,7 +147,7 @@ class DQLAgent(object):
         logger.debug('step')
         if self.last_state is not None:
             self._remember_in_memory(current_time - self._current_episode_start)
-        if self.train and self.frames_played > self.start_learn_after:
+        if self.train and self.episodes_played > self.start_learn_after:
             self._train_minibatch()
         self.last_action = self._get_next_action()
         self.last_state = current_state

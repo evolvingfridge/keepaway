@@ -1,14 +1,18 @@
 FROM      ubuntu:14.04
 MAINTAINER Mateusz Kurek master.mateusz@gmail.com
 
-
 RUN apt-get update
-RUN apt-get install -y \
+RUN apt-get install -y python-software-properties software-properties-common
+RUN apt-add-repository multiverse
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     checkinstall \
     flex \
     gcc \
+    gfortran \
     git \
+    libatlas-dev \
     libboost-all-dev \
     libqt4-dev \
     libqt4-core \
@@ -24,12 +28,15 @@ RUN apt-get install -y \
     libfreetype6-dev \
     libfontconfig1-dev \
     libglib2.0-dev \
+    liblapack-dev \
+    nvidia-current \
+    nvidia-cuda-toolkit \
     pkg-config \
     python \
+    python-virtualenv \
     qt4-dev-tools \
     wget \
     vim
-RUN apt-get install -y python-virtualenv liblapack-dev libatlas-dev gfortran
 RUN pip install numpy Theano
 
 RUN mkdir -p /home/soccer
@@ -73,28 +80,25 @@ RUN cd zeromq-4.0.5 && ./configure && make && sudo make install
 
 RUN mkdir -p /home/soccer/logs
 RUN mkdir -p /home/soccer/.rcssserver/
+RUN mkdir -p "/home/soccer/~/.rcssserver"
 
 VOLUME ["/home/soccer/logs"]
 
 # TEMPORARY
 RUN virtualenv --system-site-packages agent
-RUN /home/soccer/agent/bin/pip install ipython numpy mock pdbpp protobuf Theano
-RUN /home/soccer/agent/bin/pip install pyzmq
+RUN /home/soccer/agent/bin/pip install ipython numpy mock pdbpp protobuf Theano pyzmq
 
 RUN sudo ldconfig
 
 RUN mkdir -p /home/soccer/keepaway
 ADD keepaway/ /home/soccer/keepaway/
 RUN sudo chgrp -R soccer /home/soccer/keepaway/ && sudo chown -R soccer /home/soccer/keepaway/
+WORKDIR /home/soccer/keepaway
+RUN cd /home/soccer/keepaway/player && make depend && make
+RUN cd /home/soccer/keepaway/tools && make
 
 ADD agent/ /home/soccer/agent/src/agent/
 RUN /home/soccer/agent/bin/pip install -r /home/soccer/agent/src/agent/requirements.txt
-
-WORKDIR /home/soccer/keepaway
-RUN cd player && make depend && make
-RUN cd tools && make
-
-RUN mkdir -p "/home/soccer/~/.rcssserver"
 
 ADD run_dql.sh /home/soccer/run_dql.sh
 ADD run.sh /home/soccer/run.sh

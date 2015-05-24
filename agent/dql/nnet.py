@@ -194,12 +194,12 @@ class NeuralNet(object):
         # actual RMSProp
         updates = []
         for param_i, gparam_i in zip(self.params, grads):
-            # acc is allocated for each parameter (param_i) with 0 values with the shape of p
-            acc = theano.shared(param_i.get_value() * 0.)
-            acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
-            gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
-            gparam_i = gparam_i / gradient_scaling
-            updates.append((acc, acc_new))
+            # # acc is allocated for each parameter (param_i) with 0 values with the shape of p
+            # acc = theano.shared(param_i.get_value() * 0.)
+            # acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
+            # gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
+            # gparam_i = gparam_i / gradient_scaling
+            # updates.append((acc, acc_new))
             updates.append((param_i, param_i - self.learning_rate * gparam_i))
         return updates
 
@@ -207,19 +207,25 @@ class NeuralNet(object):
         """
         Train minibatch using Q-learning
         """
+        # logger.debug('Training minibatch: {}'.format(minibatch))
         prestates, actions, rewards, poststates, terminals = minibatch
 
         # predict Q-values for prestates, so we can keep Q-values for other
         # actions unchanged
         qvalues = self.predict(prestates)[0]
+        logger.debug('Predicted Q-values: {}'.format(qvalues))
         # predict Q-values for poststates
         post_qvalues = self.predict(poststates)[0]
+        logger.debug('Predicted post-Q-values: {}'.format(post_qvalues))
         # take maximum Q-value of all actions
         max_qvalues = np.max(post_qvalues, axis=1)
+        logger.debug('Max Q-values: {}'.format(max_qvalues))
         # update the Q-values for the actions we actually performed
         for i, action in enumerate(actions):
             qvalues[i][action] = rewards[i] + self.discount_factor * max_qvalues[i]
+        logger.debug('Updated Q-values (Q-learning): {}'.format(qvalues))
         cost = self.train(prestates, qvalues)[0]
+        logger.debug('Training cost: {}'.format(cost))
         return cost
 
     def predict_best_action(self, state):

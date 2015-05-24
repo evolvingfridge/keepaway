@@ -12,9 +12,8 @@ from dql.dql_agent import DQLAgent
 
 class EnvDefault(argparse.Action):
     def __init__(self, envvar, required=False, default=None, **kwargs):
-        if not default and envvar:
-            if envvar in os.environ:
-                default = os.environ[envvar]
+        if envvar and envvar in os.environ:
+            default = os.environ[envvar]
         if required and default:
             required = False
         super(EnvDefault, self).__init__(default=default, required=required,
@@ -37,10 +36,12 @@ parser.add_argument('--discount-factor', type=float, action=EnvDefault, envvar='
 parser.add_argument('--learning-rate', type=float, action=EnvDefault, envvar='LEARNING_RATE')
 parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='START_LEARN_AFTER')
 parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar='EVALUATION_EPSILON')
+parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION-TIME')
 
 # other params
-parser.add_argument('--evaluate-agent-each', type=int, default=1000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
-parser.add_argument('--evaluation-episodes', type=int, default=100,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
+parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
+parser.add_argument('--evaluation-episodes', type=int, default=200,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
+parser.add_argument('--logger-level', type=str, default='WARNING',  metavar='L', choices=['WARNING', 'INFO', 'DEBUG'], help='Logger level', action=EnvDefault, envvar='LOGGER_LEVEL')
 
 args = parser.parse_args()
 
@@ -50,7 +51,7 @@ file_params = (
 )
 
 # logging
-logging_level = logging.WARNING
+logging_level = getattr(logging, args.logger_level)
 logger = logging.getLogger('keepaway')
 logger.setLevel(logging_level)
 # create file handler which logs even debug messages
@@ -111,18 +112,24 @@ def main():
                 current_state=stepIn.state
             )
         elif stepIn.episode_end:
+            if agent._episode_started:
+                episodes_count += 1
+                if episodes_count % 100 == 0:
+                    logger.warning('Episodes: {}...; current epsilon: {}'.format(
+                        episodes_count,
+                        agent.epsilon,
+                    ))
             agent.end_episode(current_time=stepIn.current_time)
             action = 0
-            episodes_count += 1
 
             # evaluation
             if evaluation:
                 evaluation_episodes_count += 1
-            if episodes_count > 0 and (episodes_count / 3.0) % args.evaluate_agent_each == 0:
+            if episodes_count > 0 and episodes_count % args.evaluate_agent_each == 0:
                 logger.debug('Starting evaluation at {}'.format(episodes_count))
                 evaluation = True
                 agent.train = False
-            if evaluation_episodes_count / 3.0 == args.evaluation_episodes:
+            if evaluation_episodes_count == args.evaluation_episodes:
                 logger.debug('Evaluation end at {} (total: {})'.format(evaluation_episodes_count, episodes_count))
                 evaluation = False
                 agent.train = True
@@ -131,13 +138,6 @@ def main():
                 with open(network_filepath, 'a') as f:
                     f.write(agent._get_network_dump())
                     f.write('\n\n')
-
-            if episodes_count / 3.0 % 100 == 0:
-                logger.warning('Episodes: {}...; current epsilon: {}'.format(
-                    episodes_count / 3,
-                    agent.epsilon,
-                ))
-
         else:
             action = agent.step(
                 current_time=stepIn.current_time,
