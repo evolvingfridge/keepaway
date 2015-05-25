@@ -213,6 +213,7 @@ class NeuralNet(object):
             # gparam_i = gparam_i / gradient_scaling
             # updates.append((acc, acc_new))
             updates.append((param_i, param_i - self.learning_rate * gparam_i))
+        logger.debug('Updates: {}'.format(updates))
         return updates
 
     def train_minibatch(self, minibatch):
@@ -229,8 +230,9 @@ class NeuralNet(object):
         # predict Q-values for poststates
         post_qvalues = self.predict(poststates)[0]
         logger.debug('Predicted post-Q-values: {}'.format(post_qvalues))
-        # take maximum Q-value of all actions
-        max_qvalues = np.max(post_qvalues, axis=1)
+        # take maximum Q-value of all actions (future reward for terminal state
+        # is 0)
+        max_qvalues = np.max(post_qvalues, axis=1) * (1 - terminals)
         logger.debug('Max Q-values: {}'.format(max_qvalues))
         # update the Q-values for the actions we actually performed
         for i, action in enumerate(actions):

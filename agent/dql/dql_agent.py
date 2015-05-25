@@ -70,9 +70,9 @@ class DQLAgent(object):
         # self._init_new_game()
         logger.warning(str(self))
         self._episode_started = False
-        self._current_episode_start = 0
         self.last_state = None
         self.last_action = None
+        self._last_time = 0
         self.current_game_total_reward = 0
 
     def __str__(self):
@@ -140,23 +140,25 @@ class DQLAgent(object):
         if not self._episode_started:
             self._init_new_game()
             logger.debug('starting episode; current time: {}'.format(current_time))
-            self._current_episode_start = current_time
+            self._last_time = current_time
         return self.step(current_time=current_time, *args, **kwargs)
 
     def step(self, current_time, current_state, *args, **kwargs):
         logger.debug('step')
         if self.last_state is not None:
-            self._remember_in_memory(current_time - self._current_episode_start)
+            self._remember_in_memory(current_time - self._last_time)
         if self.train and self.episodes_played > self.start_learn_after:
             self._train_minibatch()
         self.last_action = self._get_next_action()
         self.last_state = current_state
+        self._last_time = current_time
         logger.info('Best action: {}'.format(self.last_action))
         return self.last_action
 
     def end_episode(self, current_time, *args, **kwargs):
         logger.debug('episode end')
-        if self.last_state is not None:
-            self._remember_in_memory(current_time - self._current_episode_start, True)
-        self.scores.append(self.current_game_total_reward)
-        self._episode_started = False
+        if self._episode_started:
+            if self.last_state is not None:
+                self._remember_in_memory(current_time - self._last_time, True)
+            self.scores.append(self.current_game_total_reward)
+            self._episode_started = False
