@@ -14,6 +14,8 @@ class EnvDefault(argparse.Action):
     def __init__(self, envvar, required=False, default=None, **kwargs):
         if envvar and envvar in os.environ:
             default = os.environ[envvar]
+            if kwargs.get('nargs') in ('*', '+'):
+                default = map(lambda x: kwargs['type'](x.strip()), default.split(','))
         if required and default:
             required = False
         super(EnvDefault, self).__init__(default=default, required=required,
