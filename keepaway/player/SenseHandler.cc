@@ -60,16 +60,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>    // needed for printf
 #include <iostream>   // needed for cout
 
-#include <string.h>  // for memcpy
-#include <stdlib.h>  // for rand
-#include <unistd.h>
-#include "zmq.hpp"
-#include <iostream>
-#include <fstream>
-#include <string.h>
-#include <stdlib.h>
-#include <iostream>
-
 /*****************************************************************************/
 /********************* CLASS SENSEHANDLER ************************************/
 /*****************************************************************************/
@@ -402,7 +392,6 @@ bool SenseHandler::analyzeFullStateMessage( char *strMsg )
   Time    time = WM->getCurrentTime();
 
   iTime = Parse::parseFirstInt( &strMsg );         // get the time
-  // std::cout << "[" << ::getpid() <<  "] time: " << time << "; iTime: " << iTime << std::endl;
   time.updateTime( iTime );
   Log.log( 4, "fullstate time: %d", time.getTime() );
 

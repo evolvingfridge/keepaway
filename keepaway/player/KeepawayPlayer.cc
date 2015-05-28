@@ -34,16 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SayMsgEncoder.h"
 #include <cstring>
 
-#include <string.h>  // for memcpy
-#include <stdlib.h>  // for rand
-#include <unistd.h>
-#include "zmq.hpp"
-#include <iostream>
-#include <fstream>
-#include <string.h>
-#include <stdlib.h>
-#include <iostream>
-
 extern LoggerDraw LogDraw;
 
 KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, ActHandler* act, WorldModel *wm,
@@ -290,7 +280,6 @@ SoccerCommand KeepawayPlayer::keeper()
   SoccerCommand soc;
 
   if ( WM->isNewEpisode() ) {
-    //std::cout << "[" << ::getpid() <<  "] ending episode. timeLastAction " << WM->getTimeLastAction() << "; currentCycle: : " << WM->getCurrentCycle() << "; currentTime: " << WM->getCurrentTime() << std::endl;
     SA->endEpisode( WM->keeperReward() );
     WM->setNewEpisode( false );
     WM->setLastAction( UnknownIntValue );
@@ -361,8 +350,6 @@ SoccerCommand KeepawayPlayer::keeperWithBall()
 {
   double state[ MAX_STATE_VARS ];
   int action;
-
-  //std::cout << "[" << ::getpid() <<  "] keeper with ball. timeLastAction " << WM->getTimeLastAction() << "; currentCycle: : " << WM->getCurrentCycle() << "; currentTime: " << WM->getCurrentTime() << std::endl;
 
   if ( WM->keeperStateVars( state ) > 0 ) { // if we can calculate state vars
     // Call startEpisode() on the first SMDP step

@@ -39,9 +39,7 @@ def launch_player(player_type, index, options):
         q = getattr(options, player_type + '_policy'),
         t = player_type + 's', # Pluralize for team name. TODO Really?
         x = options.stop_after,
-        y = options.start_learning_after,
-        # l = "1..1000",
-    )
+        y = options.start_learning_after)
 
     # Handle optional args.
     def put_player_file(key, name):
@@ -123,7 +121,7 @@ def launch_server(options):
     # Hardcoded settings for keepaway play.
     server_options += [('forbid_kick_off_offside', 0)]
     server_options += [('half_time', -1)]
-
+    
     # Either keepaway or trainer mode. Field size.
     server_options += [('keepaway', int(not options.coach))]
     server_options += [('keepaway_start', options.game_start)]
@@ -261,7 +259,7 @@ def parse_options(args = None, **defaults):
         # Allow --keeper-policy=ext=./whatever.so, so remove choices.
         # TODO Nicer syntax for extensions?
         #type = 'choice', choices = ['hand', 'hold', 'learned', 'rand'],
-        default = 'learned',
+        default = 'rand',
         help = "The policy for the keepers to follow.")
     parser.add_option(
         "--label", default = "",
@@ -316,7 +314,7 @@ def parse_options(args = None, **defaults):
         '--taker-output',
         help = "Output (file) name for taker policy agent.")
     parser.add_option(
-        '--taker-policy', default = 'rand',
+        '--taker-policy', default = 'hand',
         # Allow --keeper-policy=ext=./whatever.so, so remove choices.
         # TODO Nicer syntax for extensions?
         #type = 'choice', choices = ['hand', 'learned'],

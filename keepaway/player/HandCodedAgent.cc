@@ -28,98 +28,107 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <string.h>  // for memcpy
-#include <stdlib.h>  // for rand
-#include <unistd.h>
-#include "zmq.hpp"
-#include <iostream>
-#include <fstream>
+
 #include <string.h>
 #include <stdlib.h>
-#include <iostream>
-
-// #include "LearningAgent.h"
-#include "keepaway.pb.h"
 #include "HandCodedAgent.h"
-
-using namespace std;
 
 HandCodedAgent::HandCodedAgent( int numFeatures, int numActions,
 				char *strPolicy, WorldModel *wm ):
   SMDPAgent( numFeatures, numActions )
 {
-    strcpy( policy, strPolicy );
-    WM = wm;
-    std::cout << "[" << ::getpid() <<  "] hand coded init" << std::endl;
-    zmq_context = new zmq::context_t(1);
-    zmq_socket = new zmq::socket_t(*zmq_context, ZMQ_REQ);
-    zmq_socket->connect("tcp://localhost:5558");
-
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
+  strcpy( policy, strPolicy );
+  WM = wm;
 }
 
-HandCodedAgent::~HandCodedAgent()
-{
-    delete zmq_context;
-    delete zmq_socket;
-}
 
 int HandCodedAgent::startEpisode( double state[] )
 {
-    // std::cout << "[" << ::getpid() <<  "] start episode" << std::endl;
-    return step( -1 , state );
+  return step( 0, state );
 }
 
 int HandCodedAgent::step( double reward, double state[] )
 {
-    // std::cout << "[" << ::getpid() <<  "] step" << std::endl;
-    return getAction(reward, state, false, getNumFeatures());
+  if ( policy[0] == 'r' ) {      // (r)andom
+    return random();
+  }
+  else if ( policy[1] == 'o' ) { // h(o)ld
+    return alwaysHold();
+  }
+  else {                         // h(a)nd
+    return handCoded( state );
+  }
 }
 
 void HandCodedAgent::endEpisode( double reward )
 {
-    // std::cout << "[" << ::getpid() <<  "] end episode" << std::endl;
-    // Do nothing
-    double state[0];
-    // for ( int v = 0; v < getNumFeatures(); v++ ) {
-    //   state[v] = -1;
-    // }
-    getAction(reward, state, true, 0);
+  // Do nothing
 }
 
 /************ POLICIES **************/
 
-int HandCodedAgent::getAction( double reward, double state[], bool end, int features)
+int HandCodedAgent::alwaysHold()
 {
-    // std::cout << "[" << ::getpid() <<  "] select action" << std::endl;
+  return 0;
+}
 
-    // send reward and state
-    keepaway::StepIn stepIn;
-    stepIn.set_current_time(WM->getCurrentCycle());
-    stepIn.set_reward(reward);
-    for ( int v = 0; v < features; v++ ) {
-        stepIn.add_state(state[v]);
-    }
-    stepIn.set_episode_end(end);
-    stepIn.set_player_pid(::getpid());
-    std::string buf;
-    stepIn.SerializeToString(&buf);
-    zmq::message_t request (buf.size());
-    // std::cout << "[" << ::getpid() <<  "] sending" << std::endl;
-    memcpy ((void *) request.data(), buf.c_str(), buf.size());
-    zmq_socket->send(request);
-    // std::cout << "[" << ::getpid() <<  "] send" << std::endl;
+int HandCodedAgent::random()
+{
+  return ( rand() % getNumActions() );
+}
 
-    // receive action
-    int action = 0;
-    keepaway::StepOut stepOut;
-    zmq::message_t reply;
-    // std::cout << "[" << ::getpid() <<  "] receiving" << std::endl;
-    zmq_socket->recv (&reply);
-    // std::cout << "[" << ::getpid() <<  "] received" << std::endl;
-    std::string rpl = std::string(static_cast<char*>(reply.data()), reply.size());
-    stepOut.ParseFromString(rpl);
-    action = stepOut.action();
-    // std::cout << "[" << ::getpid() <<  "] end " << action << std::endl;
-    return action;
+/**
+ * Handcoded policy from Adaptive Behavior '05 article
+ * Stone, Sutton, and Kuhlmann
+ */
+int HandCodedAgent::handCoded( double state[] )
+{
+  int numK = WM->getNumKeepers();
+  int numT = WM->getNumTakers();
+
+  double WB_dist_to_C;
+  double WB_dist_to_K[ numK ];
+  double WB_dist_to_T[ numT ];
+  double dist_to_C_K[ numK ];
+  double dist_to_C_T[ numT ];
+  double nearest_Opp_dist_K[ numK ];
+  double nearest_Opp_ang_K[ numK ];
+
+  int j = 0;
+  WB_dist_to_C = state[ j++ ];
+  for ( int i = 1; i < numK; i++ )
+    WB_dist_to_K[ i ] = state[ j++ ];
+  for ( int i = 0; i < numT; i++ )
+    WB_dist_to_T[ i ] = state[ j++ ];
+  for ( int i = 1; i < numK; i++ )
+    dist_to_C_K[ i ] = state[ j++ ];
+  for ( int i = 0; i < numT; i++ )
+    dist_to_C_T[ i ] = state[ j++ ];
+  for ( int i = 1; i < numK; i++ )
+    nearest_Opp_dist_K[ i ] = state[ j++ ];
+  for ( int i = 1; i < numK; i++ )
+    nearest_Opp_ang_K[ i ] = state[ j++ ];
+
+  // If there are no opponents within 5m, then hold
+  if ( WB_dist_to_T[ 0 ] > 5 )
+    return 0;
+
+  float scores[ numK ];
+
+  // Hold threshold (alpha)
+  scores[0] = 90;
+  // Dist/Ang ratio (beta)
+  float dist_weight = 4.0;
+
+  for ( int i=1; i<numK; i++ )
+    scores[i] = dist_weight * nearest_Opp_dist_K[i] +
+      nearest_Opp_ang_K[i];
+  
+  // Get MAX
+  int best = 0;
+  for ( int i=1; i<numK; i++ )
+    if ( scores[i] > scores[best] )
+      best = i;
+
+  return best;
 }

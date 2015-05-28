@@ -29,32 +29,37 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef HAND_CODED_AGENT2
-#define HAND_CODED_AGENT2
+#ifndef DQL_AGENT
+#define DQL_AGENT
 
 #include "SMDPAgent.h"
 #include "WorldModel.h"
 #include <cstdlib>
+#include "zmq.hpp"
 
-class HandCodedAgent2:public SMDPAgent
+class DQLAgent:public SMDPAgent
 {
+  zmq::context_t* zmq_context;
+    zmq::socket_t* zmq_socket;
   WorldModel *WM;
-  int alwaysHold();
-  int random();
-  int handCoded( double state[] );
+  // int alwaysHold();
+  // int random();
+  // int handCoded( double state[] );
+  int getAction( double reward, double state[], bool end, int features);
 
   char policy[256];
 
  public:
-  HandCodedAgent2                  ( int    numFeatures,
-                    int    numActions,
-                    char   *strPolicy,
-                    WorldModel *ws );
+  DQLAgent                  ( int    numFeatures,
+				    int    numActions,
+				    char   *strPolicy,
+				    WorldModel *ws );
+  ~DQLAgent();
 
   int  startEpisode( double state[] );
   int  step( double reward, double state[] );
   void endEpisode( double reward );
   void setParams(int iCutoffEpisodes, int iStopLearningEpisodes){exit(1);} //*met 8/16/05
-};
+} ;
 
 #endif

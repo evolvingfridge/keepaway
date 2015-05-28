@@ -92,7 +92,7 @@ class OutputLayer(Layer):
 
 class NeuralNet(object):
     discount_factor = 0.95
-    learning_rate = 0.0001
+    learning_rate = 0.001
     l1_weight = 0.0
     l2_weight = 0.0001
 
@@ -206,12 +206,12 @@ class NeuralNet(object):
         # actual RMSProp
         updates = []
         for param_i, gparam_i in zip(self.params, grads):
-            # # acc is allocated for each parameter (param_i) with 0 values with the shape of p
-            # acc = theano.shared(param_i.get_value() * 0.)
-            # acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
-            # gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
-            # gparam_i = gparam_i / gradient_scaling
-            # updates.append((acc, acc_new))
+            # acc is allocated for each parameter (param_i) with 0 values with the shape of p
+            acc = theano.shared(param_i.get_value() * 0.)
+            acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
+            gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
+            gparam_i = gparam_i / gradient_scaling
+            updates.append((acc, acc_new))
             updates.append((param_i, param_i - self.learning_rate * gparam_i))
         logger.debug('Updates: {}'.format(updates))
         return updates

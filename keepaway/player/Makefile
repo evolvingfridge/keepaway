@@ -70,13 +70,10 @@ SRCS_PLAYER 	= ${SRCS} \
 		BasicPlayer.cc \
 		KeepawayPlayer.cc \
 		HandCodedAgent.cc \
-		HandCodedAgent2.cc \
-		LearningAgent.cc \
+		DQLAgent.cc \
 		tiles2.cc \
 		LinearSarsaAgent.cc \
 		main.cc
-
-# SRCS_PLAYER = test.cc keepaway.pb.cc
 
 OBJS_PLAYER	= $(SRCS_PLAYER:.cc=.o)
 

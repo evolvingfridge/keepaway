@@ -11,19 +11,19 @@ logger = logging.getLogger('keepaway')
 
 class DQLAgent(object):
     # number of most recent transitions (s, a, r, s') in history
-    transitions_history_size = 10**6
+    transitions_history_size = 10**4
     # minibatch size
-    minibatch_size = 2
+    minibatch_size = 32
     # number of most recent states that are given as input to network
     recent_states_to_network = 1
     # discount factor
     discount_factor = 0.99
     # learning rare
-    learning_rate = 0.00025
+    learning_rate = 0.001
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
     final_epsilon_greedy = 0.05  # one for 20 actions is random
-    exploration_time = float(10**6)  # number of episodes over which epsilon factor is linearly annealed to it's final value
+    exploration_time = float(5 * 10**4)  # number of episodes over which epsilon factor is linearly annealed to it's final value
     # start learn after X episodes
     start_learn_after = 10**2
     # network architecture (first layer is number of inputs, last is number of actions)
@@ -35,7 +35,7 @@ class DQLAgent(object):
     # if training mode
     train = True
     # hardcoded epsilon for tests
-    evaluation_epsilon = 0.05
+    evaluation_epsilon = 0
 
     @property
     def epsilon(self):

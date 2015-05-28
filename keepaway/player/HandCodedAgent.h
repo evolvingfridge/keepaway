@@ -35,18 +35,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SMDPAgent.h"
 #include "WorldModel.h"
 #include <cstdlib>
-#include "zmq.hpp"
 
 class HandCodedAgent:public SMDPAgent
 {
-  zmq::context_t* zmq_context;
-    zmq::socket_t* zmq_socket;
   WorldModel *WM;
-  // int alwaysHold();
-  // int random();
-  // int handCoded( double state[] );
-  int getAction( double reward, double state[], bool end, int features);
-
+  int alwaysHold();
+  int random();
+  int handCoded( double state[] );
+  
   char policy[256];
 
  public:
@@ -54,7 +50,6 @@ class HandCodedAgent:public SMDPAgent
 				    int    numActions,
 				    char   *strPolicy,
 				    WorldModel *ws );
-  ~HandCodedAgent();
 
   int  startEpisode( double state[] );
   int  step( double reward, double state[] );
