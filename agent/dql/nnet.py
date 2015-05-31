@@ -270,4 +270,4 @@ class NeuralNet(object):
         """
         q_values = self.predict([state])[0]
         logger.debug('Q values: {}'.format(q_values))
-        return np.argmax(q_values)
+        return np.argmax(q_values), np.max(q_values)

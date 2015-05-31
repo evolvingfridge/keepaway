@@ -70,6 +70,7 @@ class DQLAgent(object):
         # self._init_new_game()
         logger.warning(str(self))
         self._episode_started = False
+        self._episode_start_time = 0
         self.last_state = None
         self.last_action = None
         self._last_time = 0
@@ -87,6 +88,10 @@ class DQLAgent(object):
             result.append('{}: {}'.format(v, getattr(self, v)))
         return '\n'.join(result)
 
+    @property
+    def step_number(self):
+        return (self._last_time - self._episode_start_time)
+
     def _init_new_game(self):
         logger.debug('initializing new game (episode)')
         logger.debug('episodes played so far: {}'.format(self.episodes_played))
@@ -101,7 +106,8 @@ class DQLAgent(object):
         logger.debug('Training minibatch of size {}'.format(self.minibatch_size))
         minibatch = self.memory.get_minibatch(self.minibatch_size)
         logger.debug('Minibatch (prestates, actions, rewards, poststates, terminals):\n {}'.format(minibatch))
-        self.nnet.train_minibatch(minibatch)
+        error = self.nnet.train_minibatch(minibatch)
+        logger.info('Error (episode: {}, step: {}): {}'.format(self.episodes_played, self.step_number, error))
 
     def _remember_in_memory(self, reward, is_terminal=False):
         """
@@ -125,7 +131,8 @@ class DQLAgent(object):
             action = random.choice(range(self.number_of_actions))
         else:
             logger.debug('predicting action by nnet')
-            action = self.nnet.predict_best_action(current_state)
+            action, qvalue = self.nnet.predict_best_action(current_state)
+            logger.info('Q-Value (episode: {}, step: {}, action: {}): {}'.format(self.episodes_played, self.step_number, action, qvalue))
         self.last_action = action
         # self.frames_played += 1
         return action
@@ -141,18 +148,19 @@ class DQLAgent(object):
             self._init_new_game()
             logger.debug('starting episode; current time: {}'.format(current_time))
             self._last_time = current_time
+            self._episode_start_time = current_time
         return self.step(current_time=current_time, *args, **kwargs)
 
     def step(self, current_time, current_state, *args, **kwargs):
         logger.debug('step')
         if self.last_state is not None:
             self._remember_in_memory(current_time - self._last_time)
-        if self.train and self.episodes_played > self.start_learn_after:
-            self._train_minibatch()
         self.last_action = self._get_next_action()
         self.last_state = current_state
         self._last_time = current_time
-        logger.info('Best action: {}'.format(self.last_action))
+        if self.train and self.episodes_played > self.start_learn_after:
+            self._train_minibatch()
+        logger.debug('Best action: {}'.format(self.last_action))
         return self.last_action
 
     def end_episode(self, current_time, *args, **kwargs):
