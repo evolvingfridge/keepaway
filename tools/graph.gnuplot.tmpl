@@ -1,0 +1,27 @@
+# Color output
+set terminal postscript eps color solid "Helvetica" 24
+
+# Output file
+set output "{out_file}"
+
+# Title
+set title "{title}"
+
+# Appearance
+set style data lines
+set key below
+set border 3
+set xtics
+set ytics
+set multiplot
+
+# Axes
+set xrange [{min_x}:]
+set xlabel "{x_title}"
+
+set yrange [{min_y}:]
+set ylabel "Episode Duration (seconds)"
+
+# Plot Data
+plot for [IDX=0:{series}] '{file}' i IDX u {cols} {plot_options} title columnheader(1)
+

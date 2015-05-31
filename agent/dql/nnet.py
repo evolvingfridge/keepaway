@@ -12,7 +12,7 @@ logger = logging.getLogger('keepaway')
 
 
 class Layer(object):
-    def __init__(self, input, n_inputs, n_nodes, activation=None):
+    def __init__(self, input, n_inputs, n_nodes, activation=None, weights=None, bias=None):
         """
         Initialize a neural network layer.
 
@@ -32,18 +32,24 @@ class Layer(object):
         # weights matrix of size n_inputs * n_nodes
         # each column (total: n_nodes) represents the weights from the input
         # units to the i-th unit
-        self.weights_values = np.asarray(np.random.uniform(
-            high=weight_bound,
-            low=-weight_bound,
-            size=(n_inputs, n_nodes)
-        ), dtype=theano.config.floatX)
+        if weights is not None:
+            self.weights_values = weights
+        else:
+            self.weights_values = np.asarray(np.random.uniform(
+                high=weight_bound,
+                low=-weight_bound,
+                size=(n_inputs, n_nodes)
+            ), dtype=theano.config.floatX)
         self.weights = theano.shared(
             value=self.weights_values,
             name='weights',
             borrow=True,  # use "reference", not copy (http://deeplearning.net/software/theano/tutorial/aliasing.html#borrowing-when-creating-shared-variables)
         )
         # bias term
-        self.bias_values = np.zeros((n_nodes,), dtype=theano.config.floatX)
+        if bias is not None:
+            self.bias_values = bias
+        else:
+            self.bias_values = np.zeros((n_nodes,), dtype=theano.config.floatX)
         self.bias = theano.shared(value=self.bias_values, name='bias', borrow=True)
         # all the variables that can change during learning
         self.params = [self.weights, self.bias]
@@ -104,6 +110,9 @@ class NeuralNet(object):
     x_type = T.fmatrix
     y_type = T.fmatrix
 
+    _weights_values = None
+    _bias_values = None
+
     def __init__(
         self,
         n_inputs,  # number of inputs to neural net
@@ -119,7 +128,7 @@ class NeuralNet(object):
 
         self.layers = []
         self.params = []
-        self.params_raw = []
+        # self.params_raw = []
         prev_layer = None
         prev_layer_size = None
 
@@ -127,16 +136,22 @@ class NeuralNet(object):
         for i, layer_size in enumerate(architecture):
             # params: inputs, number of inputs for single neuron, number of neurons
             layer_type = OutputLayer if i == len(architecture) - 1 else RectifiedLayer
+            layer_kwargs = {}
+            if self._weights_values is not None:
+                layer_kwargs['weights'] = self._weights_values[i]
+            if self._bias_values is not None:
+                layer_kwargs['bias'] = self._bias_values[i]
             layer = layer_type(
                 prev_layer.output if prev_layer else x,
                 prev_layer_size or n_inputs,
-                layer_size
+                layer_size,
+                **layer_kwargs
             )
             self.layers.append(layer)
             prev_layer = layer
             prev_layer_size = layer_size
             self.params.extend(layer.params)
-            self.params_raw.extend((layer.weights_values, layer.bias_values))
+            # self.params_raw.extend((layer.weights_values, layer.bias_values))
 
         self.output_layer = layer
 
@@ -183,6 +198,13 @@ class NeuralNet(object):
                 x: temp_x,
             },
         )
+
+    @property
+    def params_raw(self):
+        p = []
+        for layer in self.layers:
+            p.extend((layer.weights.get_value(), layer.bias.get_value()))
+        return p
 
     def _get_updates(self):
         """

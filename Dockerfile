@@ -29,7 +29,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libfontconfig1-dev \
     libglib2.0-dev \
     liblapack-dev \
-    nvidia-current \
+    nvidia-331-dev \
     nvidia-cuda-toolkit \
     pkg-config \
     python \

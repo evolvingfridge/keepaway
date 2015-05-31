@@ -33,6 +33,15 @@ class TestLayer(unittest.TestCase):
             [7, 8],
         ])
         input = np.asarray(minibatch, dtype=theano.config.floatX)
+        weights = np.asarray(np.array([
+            [10, 20, 30, 40],
+            [50, 60, 70, 80],
+        ]), dtype=theano.config.floatX)
+        bias = np.asarray(np.array(
+            [100, 200, 300, 400]
+        ), dtype=theano.config.floatX)
+        layer.weights.set_value(weights)
+        layer.bias.set_value(bias)
         result = f(input)
         # weights: 4 columns (for each node in current layer), 2 rows (for each
         # node i previous layer)
@@ -42,6 +51,9 @@ class TestLayer(unittest.TestCase):
         # output: 3 rows (one for each sample in minibatches), 4 columns (one
         # for each node in current layer)
         self.assertEqual(result[0].shape, (6, 4))
+        np.testing.assert_array_equal(result[0][0], np.array(
+            [210, 340, 470, 600],  # (1*10+2*50, 1*20+2*60, 1*30+2*70, 1*40+2*80) + 100 (bias)
+        ))
 
     def test_rectify(self):
         value = np.array([[1, -3, 2, 0], [2, -4, 2, -1]])
@@ -88,16 +100,16 @@ class TestNeuralNet(unittest.TestCase):
                 dtype=theano.config.floatX
             ),
             # actions
-            np.array([1, 2]),
+            np.array([1, 2, 0, 1]),
             # rewards
-            np.array([10, 20]),
+            np.array([10, 20, 30, 40]),
             # poststates
             np.array(
                 [[9, 10], [11, 12], [13, 14], [15, 16]],
                 dtype=theano.config.floatX
             ),
             # is terminal
-            np.array([False, False])
+            np.array([False, True, False, False])
         ]
         return minibatch
 
@@ -114,6 +126,64 @@ class TestNeuralNet(unittest.TestCase):
         minibatch = self._get_minibatch()
         cost = self.nnet.train_minibatch(minibatch)
         self.assertEqual(type(cost.tolist()), float)
+
+
+class TestSimpleNeuralNet(unittest.TestCase):
+    def setUp(self):
+        # 5 nodes in first layer, 6 nodes in hidden layer, 3 nodes in output
+        # layer
+        weights = map(lambda x: np.asarray(x, dtype=theano.config.floatX), [
+            np.array([
+                [10, 20, 30],  # from first input to all nodes
+                [40, 50, 60],  # from second input to all nodes
+            ]),  # from input to layer 1
+            [
+                [100, 200],  # from node 1 in layer 1
+                [300, 400],  # from node 1 in layer 1
+                [500, 600],  # from node 1 to
+            ],  # from layer 1 to layer 2
+            [
+                [-1, 2],
+                [3, 4],
+            ],  # from layer 2 to layer 3 (output layer)
+        ])
+        bias = map(lambda x: np.asarray(x, dtype=theano.config.floatX), [
+            [1, 2, 3],
+            [40, 50],
+            [60, 70]
+        ])
+        self.nnet = NeuralNet(
+            n_inputs=2,
+            architecture=[3, 2, 2],
+            l1_weight=1,
+            l2_weight=2,
+            _weights_values=weights,
+            _bias_values=bias,
+        )
+
+    def test_output(self):
+        # layer 1:
+            # node1: 2 * 10 + 3 * 40 + 1 = 141
+            # node2: 2 * 20 + 3 * 50 + 2 = 192
+            # node2: 2 * 30 + 3 * 60 + 3 = 243
+
+        # layer 2:
+            # node1: 141 * 100 + 192 * 300 + 243 * 500 + 40 = 193 240
+            # node2: 141 * 200 + 192 * 400 + 243 * 600 + 50 = 250 850
+
+        # layer3:
+            # node1: 193240 * -1 + 250850 * 3 + 60 = 559 370
+            # node1: 193240 * 2 + 250850 * 4 + 70 = 1 389 950
+        result = self.nnet.predict([[2, 3]])
+        np.testing.assert_array_equal(result[0][0], np.asarray([559370, 1389950], dtype=theano.config.floatX))
+
+    def test_error(self):
+        cost = self.nnet.train([[2, 3]], [[559300, 1390000]])
+        # cost = l1_weight * l1 + l2_weight * l2 + output_layer_error
+        # l1 = sum of weights = 210 + 2100 + 10 = 2320
+        # l2 = sum of weights squares = 9100 + 910 000 + 30 = 919 130
+        # output layer error = (70 + 50) / 2 = 60
+        self.assertEqual(cost[0], 2320 * 1 + 919130 * 2 + 60)
 
 if __name__ == '__main__':
     unittest.main()
