@@ -97,7 +97,7 @@ class OutputLayer(Layer):
 
 
 class NeuralNet(object):
-    discount_factor = 0.95
+    discount_factor = 0.99
     learning_rate = 0.001
     l1_weight = 0.0
     l2_weight = 0.0001
@@ -110,6 +110,8 @@ class NeuralNet(object):
     x_type = T.fmatrix
     y_type = T.fmatrix
 
+    # set weights and bias through __init__ kwargs if you want to have
+    # it predefined
     _weights_values = None
     _bias_values = None
 

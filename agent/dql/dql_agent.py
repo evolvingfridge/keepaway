@@ -17,9 +17,9 @@ class DQLAgent(object):
     # number of most recent states that are given as input to network
     recent_states_to_network = 1
     # discount factor
-    discount_factor = 0.99
+    discount_factor = NeuralNet.discount_factor
     # learning rare
-    learning_rate = 0.001
+    learning_rate = NeuralNet.learning_rate
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
     final_epsilon_greedy = 0.05  # one for 20 actions is random
@@ -103,22 +103,24 @@ class DQLAgent(object):
         # self.memory.add(np.zeros((self.state_size,)), 0, 0, False)
 
     def _train_minibatch(self):
-        logger.debug('Training minibatch of size {}'.format(self.minibatch_size))
-        minibatch = self.memory.get_minibatch(self.minibatch_size)
-        logger.debug('Minibatch (prestates, actions, rewards, poststates, terminals):\n {}'.format(minibatch))
-        error = self.nnet.train_minibatch(minibatch)
-        logger.info('Error (episode: {}, step: {}): {}'.format(self.episodes_played, self.step_number, error))
+        if self.train and self.episodes_played > self.start_learn_after:
+            logger.debug('Training minibatch of size {}'.format(self.minibatch_size))
+            minibatch = self.memory.get_minibatch(self.minibatch_size)
+            logger.debug('Minibatch (prestates, actions, rewards, poststates, terminals):\n {}'.format(minibatch))
+            error = self.nnet.train_minibatch(minibatch)
+            logger.info('Error (episode: {}, step: {}): {}'.format(self.episodes_played, self.step_number, error))
 
     def _remember_in_memory(self, reward, is_terminal=False):
         """
         Save in memory last state, last action done, reward and information
         if after making last action there was a terminal state.
         """
-        logger.debug('Rembemering last state in memory with reward {} (is_terminal: {})'.format(reward, is_terminal))
-        self.memory.add(
-            self.last_state, self.last_action, max(reward, 0), is_terminal
-        )
-        self.current_game_total_reward += reward
+        if self.last_state is not None:
+            logger.debug('Rembemering last state in memory with reward {} (is_terminal: {})'.format(reward, is_terminal))
+            self.memory.add(
+                self.last_state, self.last_action, max(reward, 0), is_terminal
+            )
+            self.current_game_total_reward += reward
 
     def _get_next_action(self):
         """
@@ -149,24 +151,23 @@ class DQLAgent(object):
             logger.debug('starting episode; current time: {}'.format(current_time))
             self._last_time = current_time
             self._episode_start_time = current_time
-        return self.step(current_time=current_time, *args, **kwargs)
+        return self.step(current_time, *args, **kwargs)
 
     def step(self, current_time, current_state, *args, **kwargs):
         logger.debug('step')
-        if self.last_state is not None:
-            self._remember_in_memory(current_time - self._last_time)
+        self._remember_in_memory(current_time - self._last_time)
+        self._train_minibatch()
         self.last_action = self._get_next_action()
         self.last_state = current_state
         self._last_time = current_time
-        if self.train and self.episodes_played > self.start_learn_after:
-            self._train_minibatch()
         logger.debug('Best action: {}'.format(self.last_action))
         return self.last_action
 
     def end_episode(self, current_time, *args, **kwargs):
         logger.debug('episode end')
         if self._episode_started:
-            if self.last_state is not None:
-                self._remember_in_memory(current_time - self._last_time, True)
+            self._remember_in_memory(current_time - self._last_time, True)
+            self._train_minibatch()
             self.scores.append(self.current_game_total_reward)
             self._episode_started = False
+            self.last_state = None

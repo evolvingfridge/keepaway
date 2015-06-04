@@ -15,6 +15,7 @@ class TransitionTable(object):
         self.size = n
         self.state_size = state_size
         self.states = np.empty((n, state_size), dtype=np.float32)
+        self._terminal_state = np.zeros((state_size,), dtype=np.float32)
         self.actions = np.empty((n,), dtype=np.uint8)
         self.rewards = np.empty((n,), dtype=np.float32)
         self.is_terminal = np.empty((n,), dtype=bool)
@@ -26,9 +27,8 @@ class TransitionTable(object):
 
     @property
     def next_save_index(self):
-        i = (self.recently_saved_index + 1) % self.size
-        self.recently_saved_index += 1
-        return i
+        self.recently_saved_index = (self.recently_saved_index + 1) % self.size
+        return self.recently_saved_index
 
     def add(self, state, action, reward, is_terminal=False):
         """
@@ -84,28 +84,36 @@ class TransitionTable(object):
                     s.fill(0)
         return np.ravel(states)
 
+    def _is_state_valid(self, prestate_start, prestate_end):
+        return True  # TODO
+
     def _get_random_sample(self):
         assert(self.entries_count >= 1)
-        max_index = np.min([self.recently_saved_index + 1, self.size]) - 1
+        max_index = np.min([self.entries_count + 1, self.size]) - 1
         while True:
             # single sample will occupy elements from i to i2 (inclusive)
             i = random.randint(0, max_index)
             i2_1 = (i + self.full_state_samples_count - 1)
             i2 = i2_1 % self.size
-            if all((
-                not self.is_terminal[i2],  # last element isn't terminal
-                # check if states from i to i2+1 (inclusive) are continuous
-                self.recently_saved_index % self.size not in set(
-                    map(lambda x: x % self.size, range(i, i2_1 + 1))
-                )
-            )):
+            # not self.is_terminal[i2],  # last element isn't terminal
+            # check if states from i to i2+1 (inclusive) are continuous
+            if self.recently_saved_index not in set(
+                map(lambda x: x % self.size, range(i, i2_1 + 1))
+            ):
                 break
+            # # check if full state is continuous
+            # if self.full_state_samples_count > 1 and not self._is_state_valid(i, i2_1):
+            #     continue
+            # break
 
         state = self._get_state(i)
         action = self.actions[i2]
         reward = self.rewards[i2]
-        poststate = self._get_state(i + 1)
-        is_terminal = self.is_terminal[(i2 + 1) % self.size]
+        is_terminal = self.is_terminal[i2]
+        if is_terminal:
+            poststate = self._terminal_state
+        else:
+            poststate = self._get_state(i + 1)
         return state, action, reward, poststate, is_terminal
 
     def get_last_state(self):

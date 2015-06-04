@@ -1,5 +1,6 @@
 import numpy as np
 import unittest
+from itertools import cycle
 from mock import patch
 
 from ..states_memory import TransitionTable
@@ -155,6 +156,55 @@ class TestMemory(unittest.TestCase):
         self.assertEqual(actions.shape, (2,))
         self.assertEqual(rewards.shape, (2,))
         self.assertEqual(poststates.shape, (2, 6))
+
+
+class TestMemory2(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.__state = np.array([1, 2, 3])
+        cls.__action = 1
+        cls.__reward = 2
+
+    def setUp(self):
+        self.mem = TransitionTable(2, 3)
+
+    def _add_samples(self, count, terminals=None):
+        terminals = terminals or set()
+        for i in range(1, count + 1):
+            self.mem.add(i, i, i, i in terminals)
+
+    def test_get_random_sample_even(self):
+        self._add_samples(4)
+        for r, rand_call_expected in [(cycle([0, 1]), 1), (cycle([1, 0]), 2)]:
+            with patch('dql.states_memory.random.randint') as rand_mock:
+                def rand(*args, **kwargs):
+                    return r.next()
+
+                rand_mock.side_effect = rand
+
+                prestate, action, reward, poststate, terminal = self.mem._get_random_sample()
+                np.testing.assert_array_equal(prestate, [3, 3, 3])
+                np.testing.assert_array_equal(poststate, [4, 4, 4])
+                np.testing.assert_array_equal(action, 3)
+                np.testing.assert_array_equal(reward, 3)
+                self.assertEqual(rand_mock.call_count, rand_call_expected)
+
+    def test_get_random_sample_odd(self):
+        self._add_samples(5)
+        for r, rand_call_expected in [(cycle([0, 1]), 2), (cycle([1, 0]), 1)]:
+            with patch('dql.states_memory.random.randint') as rand_mock:
+                def rand(*args, **kwargs):
+                    return r.next()
+
+                rand_mock.side_effect = rand
+
+                prestate, action, reward, poststate, terminal = self.mem._get_random_sample()
+                np.testing.assert_array_equal(prestate, [4, 4, 4])
+                np.testing.assert_array_equal(poststate, [5, 5, 5])
+                np.testing.assert_array_equal(action, 4)
+                np.testing.assert_array_equal(reward, 4)
+                self.assertEqual(rand_mock.call_count, rand_call_expected)
+
 
 if __name__ == '__main__':
     unittest.main()
