@@ -4,7 +4,7 @@ import random
 
 from .states_memory import TransitionTable
 from .nnet import NeuralNet
-
+from .nnet_simple import NeuralNetSimple
 
 logger = logging.getLogger('keepaway')
 
@@ -59,11 +59,16 @@ class DQLAgent(object):
             state_size=self.state_size,
             full_state_samples_count=self.recent_states_to_network,
         )
+        neural_opts = dict(
+            discount_factor=self.discount_factor,
+            learning_rate=self.learning_rate,
+        )
+        neural_opts.update(**kwargs)
         self.nnet = NeuralNet(
+        # self.nnet = NeuralNetSimple(
             n_inputs=self.state_size,
             architecture=self.network_architecture,
-            discount_factor=self.discount_factor,
-            learning_rate=self.learning_rate
+            **neural_opts
         )
         self.episodes_played = 0
         self.scores = []

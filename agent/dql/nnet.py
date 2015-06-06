@@ -70,7 +70,7 @@ class Layer(object):
         :param y: vector that gives for each node the value we wished to obtain
         :type y: theano.tensor.TensorType
         """
-        return T.mean(np.abs(self.output - y))
+        return T.mean(T.abs_(self.output - y))
 
 
 class RectifiedLayer(Layer):
@@ -79,9 +79,10 @@ class RectifiedLayer(Layer):
     """
     def __init__(self, *args, **kwargs):
         super(RectifiedLayer, self).__init__(*args, **kwargs)
-        self.threshold = 0
+        self.threshold = 0.
         # Output is rectified
-        self.output = self.rectify(self.output)
+        # self.output = self.rectify(self.output)
+        self.output = T.maximum(self.output, self.threshold)
 
     def rectify(self, result):
         """
@@ -102,7 +103,10 @@ class NeuralNet(object):
     l1_weight = 0.0
     l2_weight = 0.0001
 
+    train_batch = True
+
     # RMSprop params
+    use_rmsprop = True
     rmsprop_rho = 0.9
     rmsprop_epsilon = 1e-6
 
@@ -224,19 +228,22 @@ class NeuralNet(object):
         average of the magnitudes of recent gradients for that weight."
         """
         # define gradient calculation
-        grads = T.grad(self.cost, self.params)
+        self.grads = grads = T.grad(self.cost, self.params)
+
         logger.debug('gradient: {}'.format(grads))
         # Define how much we need to change the parameter values
         # actual RMSProp
         updates = []
         for param_i, gparam_i in zip(self.params, grads):
-            # acc is allocated for each parameter (param_i) with 0 values with the shape of p
-            acc = theano.shared(param_i.get_value() * 0.)
-            acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
-            gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
-            gparam_i = gparam_i / gradient_scaling
-            updates.append((acc, acc_new))
+            if self.use_rmsprop:
+                # acc is allocated for each parameter (param_i) with 0 values with the shape of p
+                acc = theano.shared(param_i.get_value() * 0.)
+                acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
+                gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
+                gparam_i = gparam_i / gradient_scaling
+                updates.append((acc, acc_new))
             updates.append((param_i, param_i - self.learning_rate * gparam_i))
+            # updates.append((param_i, param_i*2))
         logger.debug('Updates: {}'.format(updates))
         return updates
 
@@ -259,10 +266,17 @@ class NeuralNet(object):
         max_qvalues = np.max(post_qvalues, axis=1) * (1 - terminals)
         logger.debug('Max Q-values: {}'.format(max_qvalues))
         # update the Q-values for the actions we actually performed
+        # Q*(s, a) = r + (1 - terminal) * discount_factor * max_a Q(s', a)
         for i, action in enumerate(actions):
             qvalues[i][action] = rewards[i] + self.discount_factor * max_qvalues[i]
         logger.debug('Updated Q-values (Q-learning): {}'.format(qvalues))
-        cost = self.train(prestates, qvalues)[0]
+
+        if self.train_batch:
+            cost = self.train(prestates, qvalues)[0]
+        else:
+            cost = 0
+            for prestate, qval in zip(prestates, qvalues):
+                cost += self.train([prestate], [qval])[0]
         logger.debug('Current error: {}'.format(cost))
         return cost
 

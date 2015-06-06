@@ -8,6 +8,7 @@ import zmq
 from keepaway_pb2 import StepIn, StepOut
 
 from dql.dql_agent import DQLAgent
+from hand_coded import HandCodedAgent
 
 
 class EnvDefault(argparse.Action):
@@ -16,6 +17,10 @@ class EnvDefault(argparse.Action):
             default = os.environ[envvar]
             if kwargs.get('nargs') in ('*', '+'):
                 default = map(lambda x: kwargs['type'](x.strip()), default.split(','))
+            else:
+                type_ = kwargs.get('type', str)
+                if type_ == bool:
+                    default = (default.lower() in ('1', 'true'))
         if required and default:
             required = False
         super(EnvDefault, self).__init__(default=default, required=required,
@@ -39,6 +44,7 @@ parser.add_argument('--learning-rate', type=float, action=EnvDefault, envvar='LE
 parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='START_LEARN_AFTER')
 parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar='EVALUATION_EPSILON')
 parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION_TIME')
+parser.add_argument('--train-batch', type=bool, action=EnvDefault, envvar='TRAIN_BATCH')
 
 # other params
 parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
@@ -85,8 +91,8 @@ def main():
     stepOut = StepOut()
 
     agent_kwargs = {k: v for (k, v) in args._get_kwargs() if v is not None}
-
     agent = DQLAgent(**agent_kwargs)
+    # agent = HandCodedAgent(**agent_kwargs)
     pid2id = {}
     current_id = 0
 
@@ -117,9 +123,10 @@ def main():
             if agent._episode_started:
                 episodes_count += 1
                 if episodes_count % 100 == 0:
-                    logger.warning('Episodes: {}...; current epsilon: {}'.format(
+                    logger.warning('Episodes: {}...; current epsilon: {}; frames played: {}'.format(
                         episodes_count,
                         agent.epsilon,
+                        agent.memory.entries_count,
                     ))
             agent.end_episode(current_time=stepIn.current_time)
             action = 0

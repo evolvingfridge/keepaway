@@ -34,6 +34,8 @@ def get_evaluation_params():
     agent_env_path = os.path.join(args.logs_directory, 'agent.env')
     if os.path.exists(agent_env_path):
         for line in open(agent_env_path, 'r').readlines():
+            if not line.strip():
+                continue
             var_name, value = line.split('=', 1)
             if var_name == 'EVALUATE_AGENT_EACH':
                 evaluation_each = int(value)
@@ -187,7 +189,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps):
     for f in os.listdir(args.logs_directory):
         f_name, f_ext = os.path.splitext(f)
         f_full = os.path.join(args.logs_directory, f)
-        if not f_name.startswith('agent'):
+        if not f_name.startswith('agent') or f == 'agent.env':
             continue
         i += 1
         for out_f in out_files:

@@ -129,7 +129,7 @@ class TestNeuralNet(unittest.TestCase):
 
 
 class TestSimpleNeuralNet(unittest.TestCase):
-    def setUp(self):
+    def _create_nn(self, l1=1, l2=2):
         # 5 nodes in first layer, 6 nodes in hidden layer, 3 nodes in output
         # layer
         weights = map(lambda x: np.asarray(x, dtype=theano.config.floatX), [
@@ -155,13 +155,16 @@ class TestSimpleNeuralNet(unittest.TestCase):
         self.nnet = NeuralNet(
             n_inputs=2,
             architecture=[3, 2, 2],
-            l1_weight=1,
-            l2_weight=2,
+            l1_weight=l1,
+            l2_weight=l2,
             _weights_values=weights,
             _bias_values=bias,
+            use_rmsprop=False,
+            learning_rate=0.0001,
         )
 
     def test_output(self):
+        self._create_nn()
         # layer 1:
             # node1: 2 * 10 + 3 * 40 + 1 = 141
             # node2: 2 * 20 + 3 * 50 + 2 = 192
@@ -178,12 +181,44 @@ class TestSimpleNeuralNet(unittest.TestCase):
         np.testing.assert_array_equal(result[0][0], np.asarray([559370, 1389950], dtype=theano.config.floatX))
 
     def test_error(self):
+        self._create_nn()
         cost = self.nnet.train([[2, 3]], [[559300, 1390000]])
         # cost = l1_weight * l1 + l2_weight * l2 + output_layer_error
         # l1 = sum of weights = 210 + 2100 + 10 = 2320
         # l2 = sum of weights squares = 9100 + 910 000 + 30 = 919 130
         # output layer error = (70 + 50) / 2 = 60
         self.assertEqual(cost[0], 2320 * 1 + 919130 * 2 + 60)
+
+
+class TestSimpleNeuralNet2(unittest.TestCase):
+    def _create_nn(self, l1=0, l2=0):
+        # 5 nodes in first layer, 6 nodes in hidden layer, 3 nodes in output
+        # layer
+        weights = [
+            np.asarray([np.array([10])], dtype=theano.config.floatX),
+            np.asarray([np.array([100, 200])], dtype=theano.config.floatX),
+        ]
+        self.nnet = NeuralNet(
+            n_inputs=1,
+            architecture=[1, 2],
+            l1_weight=l1,
+            l2_weight=l2,
+            _weights_values=weights,
+            # _bias_values=bias,
+            use_rmsprop=False,
+            learning_rate=0.0001,
+        )
+
+    def test_output_many(self):
+        self._create_nn()
+        result = self.nnet.predict([[1], [2], [3]])
+        np.testing.assert_array_equal(
+            result[0],
+            np.asarray(
+                [[1000, 2000], [2000, 4000], [3000, 6000]],
+                dtype=theano.config.floatX
+            )
+        )
 
 if __name__ == '__main__':
     unittest.main()
