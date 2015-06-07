@@ -89,7 +89,7 @@ class TransitionTable(object):
 
     def _get_random_sample(self):
         assert(self.entries_count >= 1)
-        max_index = np.min([self.entries_count + 1, self.size]) - 1
+        max_index = np.min([self.entries_count, self.size]) - 1
         while True:
             # single sample will occupy elements from i to i2 (inclusive)
             i = random.randint(0, max_index)
@@ -119,8 +119,15 @@ class TransitionTable(object):
     def get_last_state(self):
         return self.states[self.recently_saved_index % self.size]
 
-    def get_last_full_state(self):
-        return self._get_state(
-            (self.recently_saved_index + self.size -
-             self.full_state_samples_count + 1) % self.size
-        )
+    def get_last_full_state(self, current_state):
+        index = (self.recently_saved_index + self.size - self.full_state_samples_count) % self.size
+        states = []
+        for i in range(index, index + self.full_state_samples_count - 1):
+            i = i % self.size
+            states.append(np.copy(self.states[i]))  # append copy
+            # clear previous states and start from new non-terminal
+            if i != (index + self.full_state_samples_count - 1) % self.size and self.is_terminal[i]:
+                for s in states:
+                    s.fill(0)
+        states.append(current_state)
+        return np.ravel(states)

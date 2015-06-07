@@ -121,24 +121,24 @@ class DQLAgent(object):
         if after making last action there was a terminal state.
         """
         if self.last_state is not None:
-            logger.debug('Rembemering last state in memory with reward {} (is_terminal: {})'.format(reward, is_terminal))
+            logger.debug('Rembemering last state in memory with action {} and reward {} (is_terminal: {})'.format(self.last_action, reward, is_terminal))
             self.memory.add(
                 self.last_state, self.last_action, max(reward, 0), is_terminal
             )
             self.current_game_total_reward += reward
 
-    def _get_next_action(self):
+    def _get_next_action(self, current_state):
         """
         Return next action to be done.
         """
-        current_state = self.memory.get_last_full_state()
+        full_state = self.memory.get_last_full_state(current_state)
         logger.debug('current epsilon: {}'.format(self.epsilon))
         if random.uniform(0, 1) < self.epsilon or self.episodes_played < self.start_learn_after:
             logger.debug('returning random action')
             action = random.choice(range(self.number_of_actions))
         else:
-            logger.debug('predicting action by nnet')
-            action, qvalue = self.nnet.predict_best_action(current_state)
+            logger.debug('predicting action by nnet for state {}'.format(full_state))
+            action, qvalue = self.nnet.predict_best_action(full_state)
             logger.info('Q-Value (episode: {}, step: {}, action: {}): {}'.format(self.episodes_played, self.step_number, action, qvalue))
         self.last_action = action
         # self.frames_played += 1
@@ -162,7 +162,7 @@ class DQLAgent(object):
         logger.debug('step')
         self._remember_in_memory(current_time - self._last_time)
         self._train_minibatch()
-        self.last_action = self._get_next_action()
+        self.last_action = self._get_next_action(current_state)
         self.last_state = current_state
         self._last_time = current_time
         logger.debug('Best action: {}'.format(self.last_action))

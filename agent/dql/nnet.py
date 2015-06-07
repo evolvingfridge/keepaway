@@ -193,6 +193,7 @@ class NeuralNet(object):
                x: temp_x,  # temp_x will replace x
                y: temp_y,  # temp_y will replace y
             },
+            allow_input_downcast=True,
         )
 
         # output of network should be Q-value for an action, which is predicted
@@ -203,6 +204,7 @@ class NeuralNet(object):
             givens={
                 x: temp_x,
             },
+            allow_input_downcast=True,
         )
 
     @property

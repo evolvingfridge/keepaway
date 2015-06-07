@@ -263,7 +263,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps):
         'plot_options': 'w lines',
         'x_title': 'Episodes',
         'y_title': '|Q_expected - Q_predicted|',
-        'title': 'Avg Q delta in episode in time',
+        'title': 'Avg Q delta (network error) in episode in time',
     }, series)
 
     save_graph({
