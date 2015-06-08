@@ -14,11 +14,12 @@ parser.add_argument('logs_directory', metavar='L', help='Logs directory')
 # parser.add_argument('-g', '--graph', metavar='G', help='File with output gnuplot config')
 parser.add_argument('--window-size', default=1000, type=int)
 parser.add_argument('--mean-q-window-size', default=100, type=int)
-parser.add_argument('--use-epizodes-count', action='store_true', default=False)
-parser.add_argument('--use-learning-time', action='store_true', default=True)
+parser.add_argument('--draw-constants', action='store_true', default=False)
+# parser.add_argument('--use-learning-time', action='store_true', default=True)
 parser.add_argument('--evaluation-each', default=None, type=int)
 parser.add_argument('--evaluation-length', default=None, type=int)
 parser.add_argument('--window-write-each', default=1, type=int)
+parser.add_argument('--window-mean-write-each', default=1, type=int)
 
 args = parser.parse_args()
 
@@ -67,9 +68,9 @@ def save_graph(additional_opts, series):
             # import ipdb; ipdb.set_trace()
 
 
-def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes):
+def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes, f_window_mean, f_window_episodes_mean):
     evaluation_each, evaluation_length = get_evaluation_params()
-    out_files = (f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes)
+    out_files = (f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes, f_window_mean, f_window_episodes_mean)
     i = 0
     for f in os.listdir(args.logs_directory):
         f_name, f_ext = os.path.splitext(f)
@@ -113,6 +114,20 @@ def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_ep
                         '\n'
                     ))))
 
+                # window mean
+                if episodes_count >= args.window_size and episodes_count % args.window_mean_write_each == 0:
+                    median = statistics.median(episodes_window)
+                    f_window_mean.write('\t'.join(map(str, (
+                        hours,
+                        median,
+                        '\n'
+                    ))))
+                    f_window_episodes_mean.write('\t'.join(map(str, (
+                        episodes_count,
+                        median,
+                        '\n'
+                    ))))
+
                 # evaluation
                 if episodes_count % evaluation_each < evaluation_length:
                     evaluation_episodes.append(episode_length)
@@ -136,9 +151,18 @@ def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_ep
                     evaluation_episodes = []
         for out_f in out_files:
             out_f.write('\n\n')
+
+    if args.draw_constants:
+        for out_f in out_files:
+            for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
+                out_f.write('{}\n'.format(metric))
+                for tick in (0, hours if out_f in (f_window_mean, f_window) else episodes_count):
+                    out_f.write(' '.join(map(str, (tick, val, stdev, '\n'))))
+                out_f.write('\n\n')
     for out_f in out_files:
         out_f.flush()
-    series = i
+
+    series = i + (3 * args.draw_constants)
     # window episodes
     save_graph({
         'cols': '1:2',
@@ -156,6 +180,24 @@ def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_ep
         'plot_options': 'w lines',
         'x_title': 'Episodes count',
         'title': 'Avg episode duration (win size: {})'.format(args.window_size),
+    }, series)
+
+    save_graph({
+        'cols': '1:2',
+        'file': f_window_mean.name,
+        'out_file': os.path.join(args.logs_directory, 'window_graph_mean.eps'),
+        'plot_options': 'w lines',
+        'x_title': 'Training Time (simulator hours)',
+        'title': 'Median episode duration (win size: {})'.format(args.window_size),
+    }, series)
+
+    save_graph({
+        'cols': '1:2',
+        'file': f_window_episodes_mean.name,
+        'out_file': os.path.join(args.logs_directory, 'window_graph_episodes_mean.eps'),
+        'plot_options': 'w lines',
+        'x_title': 'Episodes count',
+        'title': 'Median episode duration (win size: {})'.format(args.window_size),
     }, series)
 
     save_graph({
@@ -289,7 +331,9 @@ def main():
         with tempfile.NamedTemporaryFile('w') as f_evaluation_confidence:
             with tempfile.NamedTemporaryFile('w') as f_window:
                 with tempfile.NamedTemporaryFile('w') as f_window_episodes:
-                    process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes)
+                    with tempfile.NamedTemporaryFile('w') as f_window_mean:
+                        with tempfile.NamedTemporaryFile('w') as f_window_episodes_mean:
+                            process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes, f_window_mean, f_window_episodes_mean)
 
     # process agent log files
     with tempfile.NamedTemporaryFile('w') as f_mean_q_delta:
