@@ -4,7 +4,7 @@ import random
 
 from .states_memory import TransitionTable
 from .nnet import NeuralNet
-from .nnet_simple import NeuralNetSimple
+# from .nnet_simple import NeuralNetSimple
 
 logger = logging.getLogger('keepaway')
 
@@ -22,7 +22,7 @@ class DQLAgent(object):
     learning_rate = NeuralNet.learning_rate
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
-    final_epsilon_greedy = 0.05  # one for 20 actions is random
+    final_epsilon_greedy = 0.0  # one for 20 actions is random
     exploration_time = float(5 * 10**4)  # number of episodes over which epsilon factor is linearly annealed to it's final value
     # start learn after X episodes
     start_learn_after = 10**2

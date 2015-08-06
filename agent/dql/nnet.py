@@ -101,7 +101,7 @@ class NeuralNet(object):
     discount_factor = 0.99
     learning_rate = 0.001
     l1_weight = 0.0
-    l2_weight = 0.0001
+    l2_weight = 0.0001  # TODO: 0?
 
     train_batch = True
 
