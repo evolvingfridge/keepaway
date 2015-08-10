@@ -101,7 +101,7 @@ class NeuralNet(object):
     discount_factor = 0.99
     learning_rate = 0.001
     l1_weight = 0.0
-    l2_weight = 0.0001  # TODO: 0?
+    l2_weight = 0.0
 
     train_batch = True
 
@@ -164,17 +164,18 @@ class NeuralNet(object):
         # define regularization terms, for some reason we only take in count
         # the weights, not biases) linear regularization term, useful for
         # having many weights zero
-        self.l1 = sum([abs(l.weights).sum() for l in self.layers])
+        # self.l1 = sum([abs(l.weights).sum() for l in self.layers])
 
         # square regularization term, useful for forcing small weights
-        self.l2_sqr = sum([(l.weights ** 2).sum() for l in self.layers])
+        # self.l2_sqr = sum([(l.weights ** 2).sum() for l in self.layers])
 
         # define the cost function
-        self.cost = (
-            self.l1_weight * self.l1 +
-            self.l2_weight * self.l2_sqr +
-            self.output_layer.errors(y)
-        )
+        # self.cost = (
+        #     self.l1_weight * self.l1 +
+        #     self.l2_weight * self.l2_sqr +
+        #     self.output_layer.errors(y)
+        # )
+        self.cost = self.output_layer.errors(y)
 
         updates = self._get_updates()
 
@@ -245,7 +246,6 @@ class NeuralNet(object):
                 gparam_i = gparam_i / gradient_scaling
                 updates.append((acc, acc_new))
             updates.append((param_i, param_i - self.learning_rate * gparam_i))
-            # updates.append((param_i, param_i*2))
         logger.debug('Updates: {}'.format(updates))
         return updates
 
