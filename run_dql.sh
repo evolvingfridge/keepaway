@@ -1,5 +1,4 @@
 #!/bin/bash
 
-cd
-source agent/bin/activate
-python agent/src/agent/agent.py # TODO: options
+source /home/soccer/agent/bin/activate
+python /home/soccer/agent/src/agent/agent.py # TODO: options

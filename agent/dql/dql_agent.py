@@ -22,7 +22,7 @@ class DQLAgent(object):
     learning_rate = NeuralNet.learning_rate
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
-    final_epsilon_greedy = 0.0  # one for 20 actions is random
+    final_epsilon_greedy = 0.0  # every action is not random
     exploration_time = float(5 * 10**4)  # number of episodes over which epsilon factor is linearly annealed to it's final value
     # start learn after X episodes
     start_learn_after = 10**2
@@ -53,6 +53,7 @@ class DQLAgent(object):
         for kw_name, kw_val in kwargs.iteritems():
             setattr(self, kw_name, kw_val)
         self.number_of_actions = self.network_architecture[-1]
+        assert self.network_architecture[0] == self.recent_states_to_network * self.state_size
 
         self.memory = TransitionTable(
             self.transitions_history_size,
@@ -66,7 +67,7 @@ class DQLAgent(object):
         neural_opts.update(**kwargs)
         self.nnet = NeuralNet(
         # self.nnet = NeuralNetSimple(
-            n_inputs=self.state_size,
+            n_inputs=self.network_architecture[0],
             architecture=self.network_architecture,
             **neural_opts
         )

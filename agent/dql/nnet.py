@@ -72,6 +72,9 @@ class Layer(object):
         """
         return T.mean(T.abs_(self.output - y))
 
+    def errors_sum(self, y):
+        return T.sum(T.abs_(self.output - y))
+
 
 class RectifiedLayer(Layer):
     """
@@ -104,6 +107,7 @@ class NeuralNet(object):
     l2_weight = 0.0
 
     train_batch = True
+    error_func = 'mean'  # or 'sum'
 
     # RMSprop params
     use_rmsprop = True
@@ -175,7 +179,7 @@ class NeuralNet(object):
         #     self.l2_weight * self.l2_sqr +
         #     self.output_layer.errors(y)
         # )
-        self.cost = self.output_layer.errors(y)
+        self.cost = self.output_layer.errors(y) if self.error_func == 'mean' else self.output_layer.errors_sum(y)
 
         updates = self._get_updates()
 
@@ -207,6 +211,17 @@ class NeuralNet(object):
             },
             allow_input_downcast=True,
         )
+
+        logger.warning(str(self))
+
+    def __str__(self):
+        result = ['NNET config: ', 'len(params): {}'.format(len(self.params))]
+        for v in [
+            'discount_factor', 'learning_rate',
+            'train_batch', 'use_rmsprop', 'rmsprop_rho', 'rmsprop_epsilon'
+        ]:
+            result.append('{}: {}'.format(v, getattr(self, v)))
+        return '\n'.join(result)
 
     @property
     def params_raw(self):
@@ -240,7 +255,12 @@ class NeuralNet(object):
         for param_i, gparam_i in zip(self.params, grads):
             if self.use_rmsprop:
                 # acc is allocated for each parameter (param_i) with 0 values with the shape of p
-                acc = theano.shared(param_i.get_value() * 0.)
+                # acc = theano.shared(param_i.get_value() * 0.)
+                value = param_i.get_value(borrow=True)
+                acc = theano.shared(
+                    np.zeros(value.shape, dtype=value.dtype),
+                    broadcastable=param_i.broadcastable
+                )
                 acc_new = self.rmsprop_rho * acc + (1 - self.rmsprop_rho) * gparam_i ** 2
                 gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
                 gparam_i = gparam_i / gradient_scaling
@@ -270,7 +290,9 @@ class NeuralNet(object):
         # update the Q-values for the actions we actually performed
         # Q*(s, a) = r + (1 - terminal) * discount_factor * max_a Q(s', a)
         for i, action in enumerate(actions):
-            qvalues[i][action] = rewards[i] + self.discount_factor * max_qvalues[i]
+            target = rewards[i] + self.discount_factor * max_qvalues[i]
+            qvalues[i][action] = target
+
         logger.debug('Updated Q-values (Q-learning): {}'.format(qvalues))
 
         if self.train_batch:

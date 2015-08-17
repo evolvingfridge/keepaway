@@ -15,7 +15,6 @@ class TransitionTable(object):
         self.size = n
         self.state_size = state_size
         self.states = np.empty((n, state_size), dtype=np.float32)
-        self._terminal_state = np.zeros((state_size,), dtype=np.float32)
         self.actions = np.empty((n,), dtype=np.uint8)
         self.rewards = np.empty((n,), dtype=np.float32)
         self.is_terminal = np.empty((n,), dtype=bool)
@@ -25,10 +24,12 @@ class TransitionTable(object):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    @property
-    def next_save_index(self):
-        self.recently_saved_index = (self.recently_saved_index + 1) % self.size
-        return self.recently_saved_index
+        self._terminal_state = np.zeros((state_size * self.full_state_samples_count,), dtype=np.float32)
+
+    # @property
+    # def next_save_index(self):
+    #     self.recently_saved_index = (self.recently_saved_index + 1) % self.size
+    #     return self.recently_saved_index
 
     def add(self, state, action, reward, is_terminal=False):
         """
@@ -37,7 +38,8 @@ class TransitionTable(object):
         applying such action and if state after making such action was terminal
         state).
         """
-        i = self.next_save_index
+        self.recently_saved_index = (self.recently_saved_index + 1) % self.size
+        i = self.recently_saved_index
         self.actions[i] = action
         self.rewards[i] = reward
         self.states[i] = state
@@ -88,7 +90,7 @@ class TransitionTable(object):
         return True  # TODO
 
     def _get_random_sample(self):
-        assert(self.entries_count >= 1)
+        # assert(self.entries_count >= 1)
         max_index = np.min([self.entries_count, self.size]) - 1
         while True:
             # single sample will occupy elements from i to i2 (inclusive)
