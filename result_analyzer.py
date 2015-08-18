@@ -35,6 +35,8 @@ avt total time playes: {avg_time_played}
 {agent_env}
 """
 
+PLOT_EXT = 'svg'
+
 
 def get_evaluation_params():
     evaluation_each = 2000
@@ -71,6 +73,7 @@ def save_graph(additional_opts, series):
         'title': 'Graph',
         'series': series,
         'y_title': 'Episode Duration (seconds)',
+        'terminal': 'svg',
     }
     window_opts = options.copy()
     window_opts.update(additional_opts)
@@ -198,7 +201,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
     save_graph({
         'cols': '1:2',
         'file': f_window.name,
-        'out_file': os.path.join(args.logs_directory, 'window_graph.eps'),
+        'out_file': os.path.join(args.logs_directory, 'window_graph.{}'.format(PLOT_EXT)),
         'plot_options': 'w lines',
         'x_title': 'Training Time (simulator hours)',
         'title': 'Avg episode duration (win size: {})'.format(args.window_size),
@@ -207,7 +210,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
     save_graph({
         'cols': '1:2',
         'file': f_window_episodes.name,
-        'out_file': os.path.join(args.logs_directory, 'window_graph_episodes.eps'),
+        'out_file': os.path.join(args.logs_directory, 'window_graph_episodes.{}'.format(PLOT_EXT)),
         'plot_options': 'w lines',
         'x_title': 'Episodes count',
         'title': 'Avg episode duration (win size: {})'.format(args.window_size),
@@ -216,7 +219,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
     # save_graph({
     #     'cols': '1:2',
     #     'file': f_window_mean.name,
-    #     'out_file': os.path.join(args.logs_directory, 'window_graph_mean.eps'),
+    #     'out_file': os.path.join(args.logs_directory, 'window_graph_mean.{}'.format(PLOT_EXT)),
     #     'plot_options': 'w lines',
     #     'x_title': 'Training Time (simulator hours)',
     #     'title': 'Median episode duration (win size: {})'.format(args.window_size),
@@ -225,7 +228,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
     # save_graph({
     #     'cols': '1:2',
     #     'file': f_window_episodes_mean.name,
-    #     'out_file': os.path.join(args.logs_directory, 'window_graph_episodes_mean.eps'),
+    #     'out_file': os.path.join(args.logs_directory, 'window_graph_episodes_mean.{}'.format(PLOT_EXT)),
     #     'plot_options': 'w lines',
     #     'x_title': 'Episodes count',
     #     'title': 'Median episode duration (win size: {})'.format(args.window_size),
@@ -234,7 +237,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
     # save_graph({
     #     'cols': '1:2:3',
     #     'file': f_evaluation_std.name,
-    #     'out_file': os.path.join(args.logs_directory, 'window_graph_eval_std.eps'),
+    #     'out_file': os.path.join(args.logs_directory, 'window_graph_eval_std.{}'.format(PLOT_EXT)),
     #     'plot_options': 'w yerrorbars',
     #     'x_title': 'Episodes count',
     #     'title': 'Avg episode duration during evaluation with std ({} every {} episodes)'.format(evaluation_length, evaluation_each),
@@ -243,7 +246,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
     # save_graph({
     #     'cols': '1:2:3',
     #     'file': f_evaluation_confidence.name,
-    #     'out_file': os.path.join(args.logs_directory, 'window_graph_eval_conf.eps'),
+    #     'out_file': os.path.join(args.logs_directory, 'window_graph_eval_conf.{}'.format(PLOT_EXT)),
     #     'plot_options': 'w yerrorbars',
     #     'x_title': 'Episodes count',
     #     'title': 'Avg episode duration during evaluation with confidence ({} every {} episodes)'.format(evaluation_length, evaluation_each),
@@ -341,7 +344,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
     save_graph({
         'cols': '1:4',
         'file': f_mean_q_delta.name,
-        'out_file': os.path.join(args.logs_directory, 'mean_q_delta.eps'),
+        'out_file': os.path.join(args.logs_directory, 'mean_q_delta.{}'.format(PLOT_EXT)),
         'plot_options': 'w lines',
         'x_title': 'Episodes',
         'y_title': '|Q_expected - Q_predicted|',
@@ -351,7 +354,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
     save_graph({
         'cols': '1:3',
         'file': f_mean_q_steps.name,
-        'out_file': os.path.join(args.logs_directory, 'mean_q_steps.eps'),
+        'out_file': os.path.join(args.logs_directory, 'mean_q_steps.{}'.format(PLOT_EXT)),
         'plot_options': 'w lines',
         'x_title': 'Steps',
         'y_title': 'Avg Q',
@@ -361,7 +364,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
     save_graph({
         'cols': '1:2',
         'file': f_mean_starting_q.name,
-        'out_file': os.path.join(args.logs_directory, 'mean_starting_q_steps.eps'),
+        'out_file': os.path.join(args.logs_directory, 'mean_starting_q_steps.{}'.format(PLOT_EXT)),
         'plot_options': 'w lines',
         'x_title': 'Steps',
         'y_title': 'Avg Q for step 0',

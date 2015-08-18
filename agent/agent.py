@@ -47,6 +47,8 @@ parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar=
 parser.add_argument('--train-batch', type=bool, action=EnvDefault, envvar='TRAIN_BATCH')
 parser.add_argument('--use_rmsprop', type=bool, action=EnvDefault, envvar='USE_RMSPROP')
 parser.add_argument('--error-func', type=str, default='mean', metavar='E', choices=['sum', 'mean'], action=EnvDefault, envvar='ERROR_FUNC')
+parser.add_argument('--final-epsilon-greedy', type=float, action=EnvDefault, envvar='FINAL_EPSILON_GREEDY')
+parser.add_argument('--rmsprop-rho', type=float, action=EnvDefault, envvar='RMSPROP_RHO')
 
 # other params
 parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
