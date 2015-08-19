@@ -19,7 +19,7 @@ class DQLAgent(object):
     # discount factor
     discount_factor = NeuralNet.discount_factor
     # learning rare
-    learning_rate = NeuralNet.learning_rate
+    # learning_rate = NeuralNet.learning_rate
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
     final_epsilon_greedy = 0.0  # every action is not random
@@ -37,6 +37,10 @@ class DQLAgent(object):
     # hardcoded epsilon for tests
     evaluation_epsilon = 0
 
+    start_learning_rate = 0.00005
+    final_learning_rate = 0.0000001
+    learning_rate_change_episodes = 5000
+
     @property
     def epsilon(self):
         if not self.train:
@@ -49,9 +53,24 @@ class DQLAgent(object):
             1
         )
 
+    @property
+    def learning_rate(self):
+        if not self.train:
+            return 0
+        return min(
+            max(
+                self.start_learning_rate - (self.start_learning_rate - self.final_learning_rate) * (self.episodes_played - self.start_learn_after) / self.learning_rate_change_episodes,
+                self.final_learning_rate
+            ),
+            self.start_learning_rate
+        )
+
     def __init__(self, **kwargs):
         for kw_name, kw_val in kwargs.iteritems():
-            setattr(self, kw_name, kw_val)
+            try:
+                setattr(self, kw_name, kw_val)
+            except AttributeError:
+                pass
         self.number_of_actions = self.network_architecture[-1]
         assert self.network_architecture[0] == self.recent_states_to_network * self.state_size
 
@@ -62,7 +81,6 @@ class DQLAgent(object):
         )
         neural_opts = dict(
             discount_factor=self.discount_factor,
-            learning_rate=self.learning_rate,
         )
         neural_opts.update(**kwargs)
         self.nnet = NeuralNet(
@@ -86,7 +104,7 @@ class DQLAgent(object):
         result = ['DQL config:']
         for v in [
             'transitions_history_size', 'minibatch_size',
-            'recent_states_to_network', 'discount_factor', 'learning_rate',
+            'recent_states_to_network', 'discount_factor',
             'initial_epsilon_greedy', 'final_epsilon_greedy',
             'exploration_time', 'start_learn_after', 'network_architecture',
             'number_of_actions', 'state_size', 'train'
@@ -113,7 +131,7 @@ class DQLAgent(object):
             logger.debug('Training minibatch of size {}'.format(self.minibatch_size))
             minibatch = self.memory.get_minibatch(self.minibatch_size)
             logger.debug('Minibatch (prestates, actions, rewards, poststates, terminals):\n {}'.format(minibatch))
-            error = self.nnet.train_minibatch(minibatch)
+            error = self.nnet.train_minibatch(minibatch, self.learning_rate)
             logger.info('Error (episode: {}, step: {}): {}'.format(self.episodes_played, self.step_number, error))
 
     def _remember_in_memory(self, reward, is_terminal=False):

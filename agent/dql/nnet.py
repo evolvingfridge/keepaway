@@ -6,7 +6,7 @@ import numpy as np
 import theano.tensor as T
 
 theano.config.openmp = False  # they say that using openmp becomes efficient only with "very large scale convolution"
-theano.config.floatX = 'float32'
+theano.config.floatX = 'float64'
 
 logger = logging.getLogger('keepaway')
 
@@ -102,7 +102,7 @@ class OutputLayer(Layer):
 
 class NeuralNet(object):
     discount_factor = 0.99
-    learning_rate = 0.001
+    # learning_rate = 0.001
     l1_weight = 0.0
     l2_weight = 0.0
 
@@ -181,7 +181,8 @@ class NeuralNet(object):
         # )
         self.cost = self.output_layer.errors(y) if self.error_func == 'mean' else self.output_layer.errors_sum(y)
 
-        updates = self._get_updates()
+        self.learning_rate = theano.shared(np.cast['float64'](0))
+        updates = self._get_updates(self.learning_rate)
 
         # we need another set of theano variables (other than x and y) to use
         # in train and predict functions
@@ -217,7 +218,7 @@ class NeuralNet(object):
     def __str__(self):
         result = ['NNET config: ', 'len(params): {}'.format(len(self.params))]
         for v in [
-            'discount_factor', 'learning_rate',
+            'discount_factor', #'learning_rate',
             'train_batch', 'use_rmsprop', 'rmsprop_rho', 'rmsprop_epsilon'
         ]:
             result.append('{}: {}'.format(v, getattr(self, v)))
@@ -230,7 +231,7 @@ class NeuralNet(object):
             p.extend((layer.weights.get_value(), layer.bias.get_value()))
         return p
 
-    def _get_updates(self):
+    def _get_updates(self, learning_rate):
         """
         Calculate params updates using RMSProp
 
@@ -265,14 +266,16 @@ class NeuralNet(object):
                 gradient_scaling = T.sqrt(acc_new + self.rmsprop_epsilon)
                 gparam_i = gparam_i / gradient_scaling
                 updates.append((acc, acc_new))
-            updates.append((param_i, param_i - self.learning_rate * gparam_i))
+            updates.append((param_i, param_i - learning_rate * gparam_i))
         logger.debug('Updates: {}'.format(updates))
         return updates
 
-    def train_minibatch(self, minibatch):
+    def train_minibatch(self, minibatch, learning_rate):
         """
         Train minibatch using Q-learning
         """
+        self.learning_rate.set_value(learning_rate)
+
         # logger.debug('Training minibatch: {}'.format(minibatch))
         prestates, actions, rewards, poststates, terminals = minibatch
 
@@ -294,6 +297,7 @@ class NeuralNet(object):
             qvalues[i][action] = target
 
         logger.debug('Updated Q-values (Q-learning): {}'.format(qvalues))
+        logger.info('Learning rate: {}'.format(self.learning_rate.get_value()))
 
         if self.train_batch:
             cost = self.train(prestates, qvalues)[0]
