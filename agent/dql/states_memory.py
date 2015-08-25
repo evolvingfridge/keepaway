@@ -15,9 +15,9 @@ class TransitionTable(object):
         self.size = n
         self.state_size = state_size
         self.states = np.empty((n, state_size), dtype=np.float32)
-        self.actions = np.empty((n,), dtype=np.uint8)
-        self.rewards = np.empty((n,), dtype=np.float32)
-        self.is_terminal = np.empty((n,), dtype=bool)
+        self.actions = np.empty((n, 1), dtype=np.uint8)
+        self.rewards = np.empty((n, 1), dtype=np.float32)
+        self.is_terminal = np.empty((n, 1), dtype=bool)
         self.recently_saved_index = -1
         self.entries_count = 0
 
@@ -53,10 +53,10 @@ class TransitionTable(object):
         """
         states_size = self.state_size * self.full_state_samples_count
         prestates = np.empty((samples, states_size), dtype = np.float32)
-        actions = np.empty((samples), dtype=np.float32)
-        rewards = np.empty((samples), dtype=np.float32)
+        actions = np.empty((samples, 1), dtype=np.uint8)
+        rewards = np.empty((samples, 1), dtype=np.float32)
         poststates = np.empty((samples, states_size), dtype = np.float32)
-        terminals = np.empty((samples), dtype=bool)
+        terminals = np.empty((samples, 1), dtype=bool)
 
         # Pick random `size` states
         j = 0

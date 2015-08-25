@@ -4,8 +4,7 @@ MAINTAINER Mateusz Kurek master.mateusz@gmail.com
 RUN apt-get update
 RUN apt-get install -y python-software-properties software-properties-common
 RUN apt-add-repository multiverse
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
     checkinstall \
     flex \
@@ -51,7 +50,7 @@ RUN wget http://launchpadlibrarian.net/140087283/libbison-dev_2.7.1.dfsg-1_amd64
 RUN wget http://launchpadlibrarian.net/140087282/bison_2.7.1.dfsg-1_amd64.deb && sudo dpkg -i bison_2.7.1.dfsg-1_amd64.deb
 
 RUN wget http://heanet.dl.sourceforge.net/project/sserver/rcssserver/15.2.2/rcssserver-15.2.2.tar.gz
-RUN wget http://softlayer-ams.dl.sourceforge.net/project/sserver/rcssmonitor/15.1.1/rcssmonitor-15.1.1.tar.gz
+RUN wget http://freefr.dl.sourceforge.net/project/sserver/rcssmonitor/15.1.1/rcssmonitor-15.1.1.tar.gz
 
 RUN tar -xzvf rcssserver-15.2.2.tar.gz
 RUN tar -xzvf rcssmonitor-15.1.1.tar.gz

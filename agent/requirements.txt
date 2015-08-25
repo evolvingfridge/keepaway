@@ -4,3 +4,4 @@ mock
 pdbpp
 protobuf
 Theano
+lasagne

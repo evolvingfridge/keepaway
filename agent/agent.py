@@ -45,13 +45,18 @@ parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='
 parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar='EVALUATION_EPSILON')
 parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION_TIME')
 parser.add_argument('--train-batch', type=bool, action=EnvDefault, envvar='TRAIN_BATCH')
-parser.add_argument('--use_rmsprop', type=bool, action=EnvDefault, envvar='USE_RMSPROP')
+parser.add_argument('--use-rmsprop', type=bool, action=EnvDefault, envvar='USE_RMSPROP')
 parser.add_argument('--error-func', type=str, default='mean', metavar='E', choices=['sum', 'mean'], action=EnvDefault, envvar='ERROR_FUNC')
 parser.add_argument('--final-epsilon-greedy', type=float, action=EnvDefault, envvar='FINAL_EPSILON_GREEDY')
 parser.add_argument('--rmsprop-rho', type=float, action=EnvDefault, envvar='RMSPROP_RHO')
+
 parser.add_argument('--start-learning-rate', type=float, action=EnvDefault, envvar='START_LEARNING_RATE')
 parser.add_argument('--final-learning-rate', type=float, action=EnvDefault, envvar='FINAL_LEARNING_RATE')
 parser.add_argument('--learning-rate-change-episodes', type=float, action=EnvDefault, envvar='LEARNING_RATE_CHANGE_EPISODES')
+parser.add_argument('--constant-learning-rate', type=float, action=EnvDefault, envvar='CONSTANT_LEARNING_RATE')
+
+parser.add_argument('--use-lasagne', type=bool, action=EnvDefault, envvar='USE_LASAGNE')
+parser.add_argument('--stop-after-episodes', type=int, action=EnvDefault, envvar='STOP_AFTER_EPISODES')
 
 # other params
 parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
@@ -98,6 +103,8 @@ def main():
     stepOut = StepOut()
 
     agent_kwargs = {k: v for (k, v) in args._get_kwargs() if v is not None}
+    if agent_kwargs.get('learning_rate'):
+        agent_kwargs['start_learning_rate'] = agent_kwargs['final_learning_rate'] = agent_kwargs['learning_rate']
     agent = DQLAgent(**agent_kwargs)
     # agent = HandCodedAgent(**agent_kwargs)
     pid2id = {}

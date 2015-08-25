@@ -4,6 +4,7 @@ import random
 
 from .states_memory import TransitionTable
 from .nnet import NeuralNet
+from .nnet_lasagne import NeuralNetLasagne
 # from .nnet_simple import NeuralNetSimple
 
 logger = logging.getLogger('keepaway')
@@ -40,6 +41,9 @@ class DQLAgent(object):
     start_learning_rate = 0.00005
     final_learning_rate = 0.0000001
     learning_rate_change_episodes = 5000
+
+    use_lasagne = True
+    stop_after_episodes = 0
 
     @property
     def epsilon(self):
@@ -83,8 +87,11 @@ class DQLAgent(object):
             discount_factor=self.discount_factor,
         )
         neural_opts.update(**kwargs)
-        self.nnet = NeuralNet(
-        # self.nnet = NeuralNetSimple(
+        if self.use_lasagne:
+            neural_net_class = NeuralNetLasagne
+        else:
+            neural_net_class = NeuralNet
+        self.nnet = neural_net_class(
             n_inputs=self.network_architecture[0],
             architecture=self.network_architecture,
             **neural_opts
@@ -195,3 +202,8 @@ class DQLAgent(object):
             self.scores.append(self.current_game_total_reward)
             self._episode_started = False
             self.last_state = None
+            if (
+                self.stop_after_episodes and
+                self.episodes_played >= self.stop_after_episodes
+            ):
+                raise StopIteration()
