@@ -114,7 +114,8 @@ class DQLAgent(object):
             'recent_states_to_network', 'discount_factor',
             'initial_epsilon_greedy', 'final_epsilon_greedy',
             'exploration_time', 'start_learn_after', 'network_architecture',
-            'number_of_actions', 'state_size', 'train'
+            'number_of_actions', 'state_size', 'train', 'use_lasagne',
+            'stop_after_episodes',
         ]:
             result.append('{}: {}'.format(v, getattr(self, v)))
         return '\n'.join(result)
@@ -202,8 +203,3 @@ class DQLAgent(object):
             self.scores.append(self.current_game_total_reward)
             self._episode_started = False
             self.last_state = None
-            if (
-                self.stop_after_episodes and
-                self.episodes_played >= self.stop_after_episodes
-            ):
-                raise StopIteration()

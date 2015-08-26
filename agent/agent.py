@@ -1,4 +1,5 @@
 import argparse
+import cPickle
 import datetime
 import logging
 import os
@@ -8,7 +9,7 @@ import zmq
 from keepaway_pb2 import StepIn, StepOut
 
 from dql.dql_agent import DQLAgent
-from hand_coded import HandCodedAgent
+# from hand_coded import HandCodedAgent
 
 
 class EnvDefault(argparse.Action):
@@ -46,6 +47,7 @@ parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar=
 parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION_TIME')
 parser.add_argument('--train-batch', type=bool, action=EnvDefault, envvar='TRAIN_BATCH')
 parser.add_argument('--use-rmsprop', type=bool, action=EnvDefault, envvar='USE_RMSPROP')
+parser.add_argument('--update-rule', type=str, action=EnvDefault, envvar='UPDATE_RULE')
 parser.add_argument('--error-func', type=str, default='mean', metavar='E', choices=['sum', 'mean'], action=EnvDefault, envvar='ERROR_FUNC')
 parser.add_argument('--final-epsilon-greedy', type=float, action=EnvDefault, envvar='FINAL_EPSILON_GREEDY')
 parser.add_argument('--rmsprop-rho', type=float, action=EnvDefault, envvar='RMSPROP_RHO')
@@ -143,6 +145,10 @@ def main():
                         agent.memory.entries_count,
                     ))
             agent.end_episode(current_time=stepIn.current_time)
+            if args.stop_after_episodes and args.stop_after_episodes == episodes_count:
+                with open(network_filepath, 'a') as f:
+                    cPickle.dump(agent.nnet, f, -1)
+                break
             action = 0
 
             # evaluation
