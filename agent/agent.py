@@ -56,9 +56,11 @@ parser.add_argument('--start-learning-rate', type=float, action=EnvDefault, envv
 parser.add_argument('--final-learning-rate', type=float, action=EnvDefault, envvar='FINAL_LEARNING_RATE')
 parser.add_argument('--learning-rate-change-episodes', type=float, action=EnvDefault, envvar='LEARNING_RATE_CHANGE_EPISODES')
 parser.add_argument('--constant-learning-rate', type=float, action=EnvDefault, envvar='CONSTANT_LEARNING_RATE')
+parser.add_argument('--clip-delta', type=float, action=EnvDefault, envvar='CLIP_DELTA')
 
 parser.add_argument('--use-lasagne', type=bool, action=EnvDefault, envvar='USE_LASAGNE')
 parser.add_argument('--stop-after-episodes', type=int, action=EnvDefault, envvar='STOP_AFTER_EPISODES')
+parser.add_argument('--swap-networks-every', type=int, action=EnvDefault, envvar='SWAP_NETWORKS_EVERY')
 
 # other params
 parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
@@ -84,7 +86,7 @@ fh.setLevel(logging_level)
 ch = logging.StreamHandler()
 ch.setLevel(logging_level)
 # create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s %(message)s', "%Y-%m-%d %H:%M:%S")
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 # add the handlers to the logger
@@ -105,8 +107,9 @@ def main():
     stepOut = StepOut()
 
     agent_kwargs = {k: v for (k, v) in args._get_kwargs() if v is not None}
-    if agent_kwargs.get('learning_rate'):
-        agent_kwargs['start_learning_rate'] = agent_kwargs['final_learning_rate'] = agent_kwargs['learning_rate']
+    for v in ('learning_rate', 'constant_learning_rate'):
+        if agent_kwargs.get(v):
+            agent_kwargs['start_learning_rate'] = agent_kwargs['final_learning_rate'] = agent_kwargs[v]
     agent = DQLAgent(**agent_kwargs)
     # agent = HandCodedAgent(**agent_kwargs)
     pid2id = {}
@@ -139,9 +142,10 @@ def main():
             if agent._episode_started:
                 episodes_count += 1
                 if episodes_count % 100 == 0:
-                    logger.warning('Episodes: {}...; current epsilon: {}; frames played: {}'.format(
+                    logger.warning('Episodes: {}...; current epsilon: {}; current learning rate: {}; frames played: {}'.format(
                         episodes_count,
                         agent.epsilon,
+                        agent.learning_rate,
                         agent.memory.entries_count,
                     ))
             agent.end_episode(current_time=stepIn.current_time)

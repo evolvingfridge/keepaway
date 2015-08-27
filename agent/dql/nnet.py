@@ -101,7 +101,7 @@ class OutputLayer(Layer):
 
 
 class NeuralNet(object):
-    discount_factor = 0.99
+    discount_factor = 1.0
     # learning_rate = 0.001
     l1_weight = 0.0
     l2_weight = 0.0

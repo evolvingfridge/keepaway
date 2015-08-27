@@ -14,7 +14,7 @@ class DQLAgent(object):
     # number of most recent transitions (s, a, r, s') in history
     transitions_history_size = 10**4
     # minibatch size
-    minibatch_size = 32
+    minibatch_size = 8
     # number of most recent states that are given as input to network
     recent_states_to_network = 1
     # discount factor
@@ -24,11 +24,11 @@ class DQLAgent(object):
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
     final_epsilon_greedy = 0.0  # every action is not random
-    exploration_time = float(5 * 10**4)  # number of episodes over which epsilon factor is linearly annealed to it's final value
+    exploration_time = float(5 * 10**3)  # number of episodes over which epsilon factor is linearly annealed to it's final value
     # start learn after X episodes
-    start_learn_after = 10**2
+    start_learn_after = 5 * 10**2
     # network architecture (first layer is number of inputs, last is number of actions)
-    network_architecture = [13, 30, 30, 3]
+    network_architecture = [13, 30, 100, 30, 3]
     # possible number of actions
     number_of_actions = 3
     # state size
@@ -39,7 +39,7 @@ class DQLAgent(object):
     evaluation_epsilon = 0
 
     start_learning_rate = 0.00005
-    final_learning_rate = 0.0000001
+    final_learning_rate = 0.00005
     learning_rate_change_episodes = 5000
 
     use_lasagne = True
@@ -115,7 +115,8 @@ class DQLAgent(object):
             'initial_epsilon_greedy', 'final_epsilon_greedy',
             'exploration_time', 'start_learn_after', 'network_architecture',
             'number_of_actions', 'state_size', 'train', 'use_lasagne',
-            'stop_after_episodes',
+            'stop_after_episodes', 'start_learning_rate', 'final_learning_rate',
+            'learning_rate_change_episodes',
         ]:
             result.append('{}: {}'.format(v, getattr(self, v)))
         return '\n'.join(result)
@@ -166,7 +167,7 @@ class DQLAgent(object):
         else:
             logger.debug('predicting action by nnet for state {}'.format(full_state))
             action, qvalue = self.nnet.predict_best_action(full_state)
-            logger.info('Q-Value (episode: {}, step: {}, action: {}): {}'.format(self.episodes_played, self.step_number, action, qvalue))
+            logger.info('Q-Value (action: {}): {}'.format(action, qvalue))
         self.last_action = action
         # self.frames_played += 1
         return action

@@ -133,7 +133,7 @@ class NeuralNetLasagne(object):
 
     error_func = 'sum'
     update_rule = 'rmsprop'
-    _swap_networks_every = 0  # freeze interval
+    swap_networks_every = 0  # freeze interval
 
     rng = np.random.RandomState()
 
@@ -149,7 +149,7 @@ class NeuralNetLasagne(object):
         self.episodes_played = 0
 
         self.output_layer = self._build_network()
-        if self._swap_networks_every > 0:
+        if self.swap_networks_every > 0:
             self.next_output_layer = self._build_network()
             self._swap_networks()
 
@@ -187,7 +187,7 @@ class NeuralNetLasagne(object):
 
         q_values = lasagne.layers.get_output(self.output_layer, states)
 
-        if self._swap_networks_every > 0:
+        if self.swap_networks_every > 0:
             next_q_values = lasagne.layers.get_output(
                 self.next_output_layer, next_states
             )
@@ -252,7 +252,8 @@ class NeuralNetLasagne(object):
         result = ['Lasagne NNET config: ']
         for v in [
             'discount_factor', 'use_rmsprop', 'rmsprop_rho',
-            'rmsprop_epsilon', 'update_rule', 'error_func'
+            'rmsprop_epsilon', 'update_rule', 'error_func', 'clip_delta',
+            'swap_networks_every'
         ]:
             result.append('{}: {}'.format(v, getattr(self, v)))
         return '\n'.join(result)
@@ -280,8 +281,8 @@ class NeuralNetLasagne(object):
         self.rewards_shared.set_value(rewards)
         self.terminals_shared.set_value(terminals)
         if (
-            self._swap_networks_every > 0 and
-            self.frames_played % self._swap_networks_every == 0
+            self.swap_networks_every > 0 and
+            self.frames_played % self.swap_networks_every == 0
         ):
             self._swap_networks()
         loss, _ = self._train()
@@ -299,6 +300,7 @@ class NeuralNetLasagne(object):
         return np.argmax(q_values), np.max(q_values)
 
     def _swap_networks(self):
+        logger.warning('Swapping networks')
         all_params = lasagne.layers.helper.get_all_param_values(
             self.output_layer
         )
