@@ -7,6 +7,7 @@ soccer:
         - logs/:/home/soccer/logs
         - run.sh:/home/soccer/run.sh  # tmp
         - start.sh:/home/soccer/start.sh  # tmp
+        - start_sarsa.sh:/home/soccer/start_sarsa.sh  # tmp
         - run_dql.sh:/home/soccer/run_dql.sh  # tmp
         # - .rcssserver:/home/soccer/.rcssserver
     #command: /bin/bash  # CHANGE LATER

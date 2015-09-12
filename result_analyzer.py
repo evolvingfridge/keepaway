@@ -12,24 +12,26 @@ from collections import defaultdict
 parser = argparse.ArgumentParser(description='Keepaway results analyzer.')
 parser.add_argument('logs_directory', metavar='L', help='Logs directory')
 # parser.add_argument('-g', '--graph', metavar='G', help='File with output gnuplot config')
-parser.add_argument('--window-size', default=200, type=int)
+parser.add_argument('--window-size', default=1000, type=int)
 parser.add_argument('--mean-q-window-size', default=100, type=int)
-parser.add_argument('--draw-constants', action='store_true', default=False)
+parser.add_argument('--draw-constants', action='store_true', default=True)
 # parser.add_argument('--use-learning-time', action='store_true', default=True)
 parser.add_argument('--evaluation-each', default=None, type=int)
 parser.add_argument('--evaluation-length', default=None, type=int)
-parser.add_argument('--window-write-each', default=1, type=int)
-parser.add_argument('--window-mean-write-each', default=1, type=int)
+parser.add_argument('--window-write-each', default=10, type=int)
+parser.add_argument('--window-mean-write-each', default=10, type=int)
 
 args = parser.parse_args()
 
 Q_VALUE_RE = re.compile(r'Q-Value \(episode: (\d+), step: ([\d.]+), action: (\d)\): ([\d.]+)')
 ERROR_RE = re.compile(r'Error \(episode: (\d+), step: ([\d.]+)\): ([\d.]+)')
+HISTOGRAM_MAX = 70
 
 STATS = """
 avg episode length (at the end): {avg_episode_length} (+- {avg_episode_length_stdev})
 avg episodes played: {avg_played}
-avt total time playes: {avg_time_played}
+avt total (simulator) time played [s]: {avg_time_played}
+median episode length: {median_episode_length}
 
 =======
 {agent_env}
@@ -87,11 +89,30 @@ def save_graph(additional_opts, series):
             # import ipdb; ipdb.set_trace()
 
 
+def save_histogram(additional_opts):
+    options = {
+        'max': int(additional_opts['max_episode_length']),
+        'n': additional_opts['max_episode_length'] * 1,
+        'title': 'Episode length histogram',
+        'terminal': 'svg',
+    }
+    histogram_opts = options.copy()
+    histogram_opts.update(additional_opts)
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tools', 'histogram.gnuplot.tmpl')) as graph_tmpl:
+        with tempfile.NamedTemporaryFile('w') as f_histogram:
+            g = graph_tmpl.read().format(**histogram_opts)
+            f_histogram.write(g)
+            f_histogram.flush()
+            print(f_histogram.name)
+            subprocess.call(['gnuplot', f_histogram.name])
+
+
 # def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes, f_window_mean, f_window_episodes_mean):
-def process_kwy(f_window, f_window_episodes, f_stats):
+def process_kwy(f_window, f_window_episodes, f_stats, f_histogram):
     evaluation_each, evaluation_length = get_evaluation_params()
     out_files = (f_window, f_window_episodes)
     i = 0
+    max_episode_length = 0
     final_episodes_length = []
     episodes_counts = []
     keepaway_total_times = []
@@ -179,6 +200,11 @@ def process_kwy(f_window, f_window_episodes, f_stats):
         for out_f in out_files:
             out_f.write('\n\n')
 
+        for val in episodes_window:
+            if val <= HISTOGRAM_MAX:
+                f_histogram.write(str(val) + '\n')
+                max_episode_length = max(max_episode_length, int(val))
+
     if args.draw_constants:
         for out_f in out_files:
             for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
@@ -195,6 +221,7 @@ def process_kwy(f_window, f_window_episodes, f_stats):
         avg_episode_length_stdev=statistics.stdev(final_episodes_length) if len(final_episodes_length) > 1 else 0,
         avg_played=statistics.mean(episodes_counts),
         avg_time_played=statistics.mean(keepaway_total_times),
+        median_episode_length=statistics.median(final_episodes_length),
         agent_env=get_agent_env(),
     ))
     # window episodes
@@ -215,6 +242,13 @@ def process_kwy(f_window, f_window_episodes, f_stats):
         'x_title': 'Episodes count',
         'title': 'Avg episode duration (win size: {})'.format(args.window_size),
     }, series)
+
+    save_histogram({
+        'file': f_histogram.name,
+        'max_episode_length': max_episode_length,
+        'out_file': os.path.join(args.logs_directory, 'histogram_graph.{}'.format(PLOT_EXT)),
+        'div': 1.0 / i,
+    })
 
     # save_graph({
     #     'cols': '1:2',
@@ -322,7 +356,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
 
             s = c = 0
             prev = 0
-            for step in range(1, max(steps_sum_q.keys()) + 1):
+            for step in range(1, max(steps_sum_q.keys() or [1]) + 1):
                 s = steps_sum_q.get(step, 0)
                 c = steps_count_q.get(step, 0)
                 if c != 0:
@@ -385,9 +419,10 @@ def main():
     with tempfile.NamedTemporaryFile('w') as f_window:
         with tempfile.NamedTemporaryFile('w') as f_window_episodes:
             with open(os.path.join(args.logs_directory, 'stats.txt'), 'w') as f_stats:
+                with tempfile.NamedTemporaryFile('w') as f_histogram:
                     # with tempfile.NamedTemporaryFile('w') as f_window_mean:
                     #     with tempfile.NamedTemporaryFile('w') as f_window_episodes_mean:
-                process_kwy(f_window, f_window_episodes, f_stats)
+                    process_kwy(f_window, f_window_episodes, f_stats, f_histogram)
 
     # process agent log files
     with tempfile.NamedTemporaryFile('w') as f_mean_q_delta:

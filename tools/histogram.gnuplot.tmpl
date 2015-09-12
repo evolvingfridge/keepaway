@@ -1,0 +1,21 @@
+set terminal {terminal}
+set output "{out_file}"
+set title "{title}"
+set xlabel "Episode length [s]"
+set ylabel "Number of episodes"
+
+n={n} #number of intervals
+max={max}. #max value
+min=0. #min value
+width=(max-min)/n #interval width
+#function used to map a value to the intervals
+hist(x,width)=width*floor(x/width)+width/2.0
+
+set boxwidth width*0.9
+## set offset graph 0.05,0.05,0.05,0.0
+set xtics 5
+set grid ytics xtics
+set grid
+
+#count and plot
+plot '{file}' u (hist($1,width)):({div}) smooth freq w boxes lc rgb"green" notitle
