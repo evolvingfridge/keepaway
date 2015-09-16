@@ -47,27 +47,28 @@ class DQLAgent(object):
 
     @property
     def epsilon(self):
-        if not self.train:
-            return self.evaluation_epsilon
-        return min(
-            max(
-                self.initial_epsilon_greedy - (self.episodes_played - self.start_learn_after) / self.exploration_time,
-                self.final_epsilon_greedy
-            ),
-            1
-        )
+        # if not self.train:
+        #     return self.evaluation_epsilon
+        # return min(
+        #     max(
+        #         self.initial_epsilon_greedy - (self.episodes_played - self.start_learn_after) / self.exploration_time,
+        #         self.final_epsilon_greedy
+        #     ),
+        #     1
+        # )
+        return self._epsilon if self.train else self.evaluation_epsilon
 
-    @property
-    def learning_rate(self):
-        if not self.train:
-            return 0
-        return min(
-            max(
-                self.start_learning_rate - (self.start_learning_rate - self.final_learning_rate) * (self.episodes_played - self.start_learn_after) / self.learning_rate_change_episodes,
-                self.final_learning_rate
-            ),
-            self.start_learning_rate
-        )
+    # @property
+    # def learning_rate(self):
+    #     if not self.train:
+    #         return 0
+    #     return min(
+    #         max(
+    #             self.start_learning_rate - (self.start_learning_rate - self.final_learning_rate) * (self.episodes_played - self.start_learn_after) / self.learning_rate_change_episodes,
+    #             self.final_learning_rate
+    #         ),
+    #         self.start_learning_rate
+    #     )
 
     def __init__(self, **kwargs):
         for kw_name, kw_val in kwargs.iteritems():
@@ -99,6 +100,13 @@ class DQLAgent(object):
         self.episodes_played = 0
         self.scores = []
         # self._init_new_game()
+
+        self._epsilon_change_after_episode = (self.initial_epsilon_greedy - self.final_epsilon_greedy) / self.exploration_time
+        self._learning_rate_change_after_episode = (self.start_learning_rate - self.final_learning_rate) / self.learning_rate_change_episodes
+
+        self._epsilon = self.initial_epsilon_greedy
+        self.learning_rate = self.start_learning_rate
+
         logger.warning(str(self))
         self._episode_started = False
         self._episode_start_time = 0
@@ -116,7 +124,8 @@ class DQLAgent(object):
             'exploration_time', 'start_learn_after', 'network_architecture',
             'number_of_actions', 'state_size', 'train', 'use_lasagne',
             'stop_after_episodes', 'start_learning_rate', 'final_learning_rate',
-            'learning_rate_change_episodes',
+            'learning_rate_change_episodes', '_epsilon_change_after_episode',
+            '_learning_rate_change_after_episode'
         ]:
             result.append('{}: {}'.format(v, getattr(self, v)))
         return '\n'.join(result)
@@ -132,7 +141,8 @@ class DQLAgent(object):
         self.last_action = None
         self.current_game_total_reward = 0
         self._episode_started = True
-        self.episodes_played += 1
+        if self.train:
+            self.episodes_played += 1
         # self.memory.add(np.zeros((self.state_size,)), 0, 0, False)
 
     def _train_minibatch(self):
@@ -148,7 +158,7 @@ class DQLAgent(object):
         Save in memory last state, last action done, reward and information
         if after making last action there was a terminal state.
         """
-        if self.last_state is not None:
+        if self.last_state is not None and self.train:
             logger.debug('Rembemering last state in memory with action {} and reward {} (is_terminal: {})'.format(self.last_action, reward, is_terminal))
             self.memory.add(
                 self.last_state, self.last_action, max(reward, 0), is_terminal
@@ -204,3 +214,6 @@ class DQLAgent(object):
             self.scores.append(self.current_game_total_reward)
             self._episode_started = False
             self.last_state = None
+            if self.train and self.episodes_played > self.start_learn_after:
+                self._epsilon = max(self._epsilon - self._epsilon_change_after_episode, self.final_epsilon_greedy)
+                self.learning_rate = max(self.learning_rate - self._learning_rate_change_after_episode, self.final_learning_rate)

@@ -37,34 +37,38 @@ parser.add_argument('--network-architecture', metavar='N', type=int, nargs='*',
                     help='Deep Network architecture', action=EnvDefault, envvar='NETWORK_ARCHITECTURE')
 parser.add_argument('--train', dest='train', action='store_true',
                     default=True, help='Train network?')
+
 parser.add_argument('--minibatch-size', type=int, action=EnvDefault, envvar='MINIBATCH_SIZE')
 parser.add_argument('--transitions-history-size', type=int, action=EnvDefault, envvar='TRANSITIONS_HISTORY_SIZE')
 parser.add_argument('--recent-states-to-network', type=int, action=EnvDefault, envvar='RECENT_STATES_TO_NETWORK')
-parser.add_argument('--discount-factor', type=float, action=EnvDefault, envvar='DISCOUNT_FACTOR')
-# parser.add_argument('--learning-rate', type=float, action=EnvDefault, envvar='LEARNING_RATE')
-parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='START_LEARN_AFTER')
-parser.add_argument('--evaluation-epsilon', type=int, action=EnvDefault, envvar='EVALUATION_EPSILON')
-parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION_TIME')
 parser.add_argument('--train-batch', type=bool, action=EnvDefault, envvar='TRAIN_BATCH')
-parser.add_argument('--use-rmsprop', type=bool, action=EnvDefault, envvar='USE_RMSPROP')
-parser.add_argument('--update-rule', type=str, action=EnvDefault, envvar='UPDATE_RULE')
-parser.add_argument('--error-func', type=str, default='mean', metavar='E', choices=['sum', 'mean'], action=EnvDefault, envvar='ERROR_FUNC')
-parser.add_argument('--final-epsilon-greedy', type=float, action=EnvDefault, envvar='FINAL_EPSILON_GREEDY')
-parser.add_argument('--rmsprop-rho', type=float, action=EnvDefault, envvar='RMSPROP_RHO')
 
+parser.add_argument('--discount-factor', type=float, action=EnvDefault, envvar='DISCOUNT_FACTOR')
+parser.add_argument('--final-epsilon-greedy', type=float, action=EnvDefault, envvar='FINAL_EPSILON_GREEDY')
 parser.add_argument('--start-learning-rate', type=float, action=EnvDefault, envvar='START_LEARNING_RATE')
 parser.add_argument('--final-learning-rate', type=float, action=EnvDefault, envvar='FINAL_LEARNING_RATE')
 parser.add_argument('--learning-rate-change-episodes', type=float, action=EnvDefault, envvar='LEARNING_RATE_CHANGE_EPISODES')
 parser.add_argument('--constant-learning-rate', type=float, action=EnvDefault, envvar='CONSTANT_LEARNING_RATE')
+# parser.add_argument('--learning-rate', type=float, action=EnvDefault, envvar='LEARNING_RATE')
+parser.add_argument('--rmsprop-rho', type=float, action=EnvDefault, envvar='RMSPROP_RHO')
+
+parser.add_argument('--start-learn-after', type=int, action=EnvDefault, envvar='START_LEARN_AFTER')
+parser.add_argument('--exploration-time', type=float, action=EnvDefault, envvar='EXPLORATION_TIME')
+parser.add_argument('--stop-after-episodes', type=int, action=EnvDefault, envvar='STOP_AFTER_EPISODES')
+
+parser.add_argument('--use-rmsprop', type=bool, action=EnvDefault, envvar='USE_RMSPROP')
+parser.add_argument('--update-rule', type=str, action=EnvDefault, envvar='UPDATE_RULE')
+parser.add_argument('--error-func', type=str, default='mean', metavar='E', choices=['sum', 'mean'], action=EnvDefault, envvar='ERROR_FUNC')
+parser.add_argument('--swap-networks-every', type=int, action=EnvDefault, envvar='SWAP_NETWORKS_EVERY')
+
 parser.add_argument('--clip-delta', type=float, action=EnvDefault, envvar='CLIP_DELTA')
 
 parser.add_argument('--use-lasagne', type=bool, action=EnvDefault, envvar='USE_LASAGNE')
-parser.add_argument('--stop-after-episodes', type=int, action=EnvDefault, envvar='STOP_AFTER_EPISODES')
-parser.add_argument('--swap-networks-every', type=int, action=EnvDefault, envvar='SWAP_NETWORKS_EVERY')
 
 # other params
-parser.add_argument('--evaluate-agent-each', type=int, default=5000,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
-parser.add_argument('--evaluation-episodes', type=int, default=200,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
+parser.add_argument('--evaluate-agent-each', type=int, default=600,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
+parser.add_argument('--evaluation-episodes', type=int, default=100,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
+parser.add_argument('--evaluation-epsilon', type=float, default=0.0, action=EnvDefault, envvar='EVALUATION_EPSILON')
 parser.add_argument('--logger-level', type=str, default='WARNING',  metavar='L', choices=['WARNING', 'INFO', 'DEBUG'], help='Logger level', action=EnvDefault, envvar='LOGGER_LEVEL')
 
 args = parser.parse_args()
@@ -115,7 +119,7 @@ def main():
     pid2id = {}
     current_id = 0
 
-    episodes_count = 0
+    episodes_count = 1
     evaluation_episodes_count = 0
     evaluation = False
 
@@ -139,38 +143,37 @@ def main():
                 current_state=stepIn.state
             )
         elif stepIn.episode_end:
-            if agent._episode_started:
+            episode_started = agent._episode_started
+            if episode_started:
                 episodes_count += 1
-                if episodes_count % 100 == 0:
+                if episodes_count % 100 == 1 and not evaluation:
                     logger.warning('Episodes: {}...; current epsilon: {}; current learning rate: {}; frames played: {}'.format(
-                        episodes_count,
+                        episodes_count - 1,
                         agent.epsilon,
                         agent.learning_rate,
                         agent.memory.entries_count,
                     ))
             agent.end_episode(current_time=stepIn.current_time)
             if args.stop_after_episodes and args.stop_after_episodes == episodes_count:
-                with open(network_filepath, 'a') as f:
-                    cPickle.dump(agent.nnet, f, -1)
                 break
             action = 0
 
             # evaluation
-            if evaluation:
-                evaluation_episodes_count += 1
-            if episodes_count > 0 and episodes_count % args.evaluate_agent_each == 0:
-                logger.debug('Starting evaluation at {}'.format(episodes_count))
-                evaluation = True
-                agent.train = False
-            if evaluation_episodes_count == args.evaluation_episodes:
-                logger.debug('Evaluation end at {} (total: {})'.format(evaluation_episodes_count, episodes_count))
-                evaluation = False
-                agent.train = True
-                evaluation_episodes_count = 0
-                # save current network
-                with open(network_filepath, 'a') as f:
-                    f.write(agent._get_network_dump())
-                    f.write('\n\n')
+            if episode_started:
+                if evaluation:
+                    evaluation_episodes_count += 1
+                if episodes_count > 0 and episodes_count % args.evaluate_agent_each == 1:
+                    agent.train = False
+                    evaluation = True
+                    logger.warning('Starting evaluation at {} (simulator time: {}) with epsilon {}'.format(episodes_count, stepIn.current_time, agent.epsilon))
+                if evaluation_episodes_count == args.evaluation_episodes:
+                    logger.warning('Evaluation end after {} episodes (simulator time: {}, total episodes: {})'.format(evaluation_episodes_count, stepIn.current_time, episodes_count - 1))
+                    evaluation = False
+                    agent.train = True
+                    evaluation_episodes_count = 0
+                    # save current network
+                    with open(network_filepath + '__eval_{}'.format(episodes_count), 'a') as f:
+                        cPickle.dump(agent.nnet, f, -1)
         else:
             action = agent.step(
                 current_time=stepIn.current_time,
@@ -179,8 +182,8 @@ def main():
         stepOut.action = action
         out = stepOut.SerializeToString()
         socket.send(out)
-        # logger.debug('=' * 40)
-
+    with open(network_filepath, 'a') as f:
+        cPickle.dump(agent.nnet, f, -1)
 
 if __name__ == '__main__':
     main()
