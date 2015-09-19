@@ -1,5 +1,9 @@
-import numpy as np
+import logging
 import random
+
+import numpy as np
+
+logger = logging.getLogger('keepaway')
 
 
 class TransitionTable(object):
@@ -92,6 +96,7 @@ class TransitionTable(object):
     def _get_random_sample(self):
         # assert(self.entries_count >= 1)
         max_index = np.min([self.entries_count, self.size]) - 1
+        logger.debug('max index: {}, recently_saved_index: {}'.format(max_index, self.recently_saved_index))
         while True:
             # single sample will occupy elements from i to i2 (inclusive)
             i = random.randint(0, max_index)
@@ -99,9 +104,11 @@ class TransitionTable(object):
             i2 = i2_1 % self.size
             # not self.is_terminal[i2],  # last element isn't terminal
             # check if states from i to i2+1 (inclusive) are continuous
-            if self.recently_saved_index not in set(
+            excl = set(
                 map(lambda x: x % self.size, range(i, i2_1 + 1))
-            ):
+            )
+            logger.debug('checking if rsi not in {} (between {} and {})'.format(excl, i, i2_1 + 1))
+            if self.recently_saved_index not in excl:
                 break
             # # check if full state is continuous
             # if self.full_state_samples_count > 1 and not self._is_state_valid(i, i2_1):

@@ -108,9 +108,10 @@ def save_histogram(additional_opts):
 
 
 # def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes, f_window_mean, f_window_episodes_mean):
-def process_kwy(f_window, f_window_episodes, f_stats, f_histogram):
+def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_std, f_evaluation_confidence):
     evaluation_each, evaluation_length = get_evaluation_params()
-    out_files = (f_window, f_window_episodes)
+    out_files = (f_window, f_window_episodes, f_evaluation_std, f_evaluation_confidence)
+    constants_files = (f_window, f_window_episodes)
     i = 0
     max_episode_length = 0
     final_episodes_length = []
@@ -173,27 +174,27 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram):
                 #     ))))
 
                 # evaluation
-                # if episodes_count % evaluation_each < evaluation_length:
-                #     evaluation_episodes.append(episode_length)
-                # elif episodes_count % evaluation_each == evaluation_length:
-                #     evaluations += 1
-                #     if evaluation_episodes:
-                #         mean = statistics.mean(evaluation_episodes)
-                #         stdev = statistics.stdev(evaluation_episodes, xbar=mean)
-                #         confidence = 1.96 * stdev / math.sqrt(len(evaluation_episodes))
-                #         f_evaluation_std.write(' '.join(map(str, (
-                #             episodes_count,
-                #             mean,
-                #             stdev,
-                #             '\n',
-                #         ))))
-                #         f_evaluation_confidence.write(' '.join(map(str, (
-                #             episodes_count,
-                #             mean,
-                #             confidence,
-                #             '\n',
-                #         ))))
-                #         evaluation_episodes = []
+                if episodes_count % evaluation_each < evaluation_length:
+                    evaluation_episodes.append(episode_length)
+                elif episodes_count % evaluation_each == evaluation_length:
+                    evaluations += 1
+                    if evaluation_episodes:
+                        mean = statistics.mean(evaluation_episodes)
+                        stdev = statistics.stdev(evaluation_episodes, xbar=mean)
+                        confidence = 1.96 * stdev / math.sqrt(len(evaluation_episodes))
+                        f_evaluation_std.write(' '.join(map(str, (
+                            episodes_count,
+                            mean,
+                            stdev,
+                            '\n',
+                        ))))
+                        f_evaluation_confidence.write(' '.join(map(str, (
+                            episodes_count,
+                            mean,
+                            confidence,
+                            '\n',
+                        ))))
+                        evaluation_episodes = []
             final_episodes_length.append(current_sum / args.window_size)
             episodes_counts.append(episodes_count)
             keepaway_total_times.append(end_time)
@@ -206,7 +207,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram):
                 max_episode_length = max(max_episode_length, int(val))
 
     if args.draw_constants:
-        for out_f in out_files:
+        for out_f in constants_files:
             for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
                 out_f.write('{}\n'.format(metric))
                 for tick in (0, hours if out_f in (f_window,) else episodes_count):
@@ -268,23 +269,33 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram):
     #     'title': 'Median episode duration (win size: {})'.format(args.window_size),
     # }, series)
 
-    # save_graph({
-    #     'cols': '1:2:3',
-    #     'file': f_evaluation_std.name,
-    #     'out_file': os.path.join(args.logs_directory, 'window_graph_eval_std.{}'.format(PLOT_EXT)),
-    #     'plot_options': 'w yerrorbars',
-    #     'x_title': 'Episodes count',
-    #     'title': 'Avg episode duration during evaluation with std ({} every {} episodes)'.format(evaluation_length, evaluation_each),
-    # }, series)
+    save_graph({
+        'cols': '1:2:3',
+        'file': f_evaluation_std.name,
+        'out_file': os.path.join(args.logs_directory, 'window_graph_eval_std.{}'.format(PLOT_EXT)),
+        'plot_options': 'w yerrorbars',
+        'x_title': 'Episodes count',
+        'title': 'Avg episode duration during evaluation with std ({} every {} episodes)'.format(evaluation_length, evaluation_each),
+    }, series)
 
-    # save_graph({
-    #     'cols': '1:2:3',
-    #     'file': f_evaluation_confidence.name,
-    #     'out_file': os.path.join(args.logs_directory, 'window_graph_eval_conf.{}'.format(PLOT_EXT)),
-    #     'plot_options': 'w yerrorbars',
-    #     'x_title': 'Episodes count',
-    #     'title': 'Avg episode duration during evaluation with confidence ({} every {} episodes)'.format(evaluation_length, evaluation_each),
-    # }, series)
+    save_graph({
+        'cols': '1:2:3',
+        'file': f_evaluation_confidence.name,
+        'out_file': os.path.join(args.logs_directory, 'window_graph_eval_conf.{}'.format(PLOT_EXT)),
+        'plot_options': 'w yerrorbars',
+        'x_title': 'Episodes count',
+        'title': 'Avg episode duration during evaluation with confidence ({} every {} episodes)'.format(evaluation_length, evaluation_each),
+    }, series)
+
+    save_graph({
+        'cols': '1:2',
+        'file': f_evaluation_std.name,
+        'out_file': os.path.join(args.logs_directory, 'window_graph_eval.{}'.format(PLOT_EXT)),
+        # 'plot_options': 'w yerrorbars',
+        'plot_options': 'w points',
+        'x_title': 'Episodes count',
+        'title': 'Avg episode duration during evaluation ({} every {} episodes)'.format(evaluation_length, evaluation_each),
+    }, series)
 
 
 def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
@@ -414,15 +425,14 @@ def main():
         args.logs_directory = args.logs_directory[:-1]
 
     # process kwy files
-    # with tempfile.NamedTemporaryFile('w') as f_evaluation_std:
-    #     with tempfile.NamedTemporaryFile('w') as f_evaluation_confidence:
     with tempfile.NamedTemporaryFile('w') as f_window:
         with tempfile.NamedTemporaryFile('w') as f_window_episodes:
             with open(os.path.join(args.logs_directory, 'stats.txt'), 'w') as f_stats:
                 with tempfile.NamedTemporaryFile('w') as f_histogram:
-                    # with tempfile.NamedTemporaryFile('w') as f_window_mean:
-                    #     with tempfile.NamedTemporaryFile('w') as f_window_episodes_mean:
-                    process_kwy(f_window, f_window_episodes, f_stats, f_histogram)
+                    with tempfile.NamedTemporaryFile('w') as f_evaluation_std:
+                        with tempfile.NamedTemporaryFile('w') as f_evaluation_confidence:
+                            #     with tempfile.NamedTemporaryFile('w') as f_window_episodes_mean:
+                            process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_std, f_evaluation_confidence)
 
     # process agent log files
     with tempfile.NamedTemporaryFile('w') as f_mean_q_delta:

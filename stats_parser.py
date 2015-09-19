@@ -3,11 +3,13 @@ import re
 import sys
 
 COLUMNS = [
-    'EXPLORATION_TIME', 'MINIBATCH_SIZE', 'CONSTANT_LEARNING_RATE',
+    'result (avg) [s]', '\'+-',
+    'EXPLORATION_TIME', 'MINIBATCH_SIZE', 'TRANSITIONS_HISTORY_SIZE', 'CONSTANT_LEARNING_RATE',
     'START_LEARNING_RATE', 'FINAL_LEARNING_RATE', 'LEARNING_RATE_CHANGE_EPISODES',
-    'NETWORK_ARCHITECTURE', 'DISCOUNT_FACTOR', 'CLIP_DELTA', 'SWAP_NETWORKS_EVERY',
-    'FINAL_EPSILON_GREEDY', 'USE_LASAGNE', 'simulator time [h]',
-    'result (avg) [s]', '\'+-', 'result (median) [s]',
+    'NETWORK_ARCHITECTURE', 'ERROR_FUNC', 'UPDATE_RULE', 'DISCOUNT_FACTOR',
+    'CLIP_DELTA', 'SWAP_NETWORKS_EVERY', 'FINAL_EPSILON_GREEDY',
+    'USE_LASAGNE', 'EVALUATE_AGENT_EACH', 'EVALUATION_EPISODES',
+    'simulator time [h]', 'result (median) [s]', 'dir'
 ]
 
 
@@ -17,11 +19,11 @@ def float_round(f, digits=4, multiply=1.0):
 print('\t'.join(COLUMNS))
 
 for d in os.listdir(sys.argv[-1]):
+    l = {'dir': d}
     d = os.path.abspath(os.path.join(sys.argv[-1], d))
     if not os.path.isdir(d):
         continue
     # print('Processing {}'.format(d))
-    l = {}
     for i, line in enumerate(open(os.path.join(d, 'stats.txt'))):
         line = line.strip()
         if i == 1:
@@ -41,6 +43,9 @@ for d in os.listdir(sys.argv[-1]):
             s = line.split('=')
             if s[0] in COLUMNS:
                 l[s[0]] = s[1]
+    if l.get('START_LEARNING_RATE') == l.get('FINAL_LEARNING_RATE') and l.get('START_LEARNING_RATE'):
+        l['CONSTANT_LEARNING_RATE'] = l.pop('START_LEARNING_RATE')
+        del l['FINAL_LEARNING_RATE']
     for c in COLUMNS:
         print('{}\t'.format(l.get(c, '-')), end="")
     print('')
