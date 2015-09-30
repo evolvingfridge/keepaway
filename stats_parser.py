@@ -9,7 +9,7 @@ COLUMNS = [
     'NETWORK_ARCHITECTURE', 'ERROR_FUNC', 'UPDATE_RULE', 'DISCOUNT_FACTOR',
     'CLIP_DELTA', 'SWAP_NETWORKS_EVERY', 'FINAL_EPSILON_GREEDY',
     'USE_LASAGNE', 'EVALUATE_AGENT_EACH', 'EVALUATION_EPISODES',
-    'simulator time [h]', 'result (median) [s]', 'dir'
+    'simulator time [h]', 'result (median) [s]', 'result (eval) [s]', 'dir'
 ]
 
 
@@ -26,17 +26,18 @@ for d in os.listdir(sys.argv[-1]):
     # print('Processing {}'.format(d))
     for i, line in enumerate(open(os.path.join(d, 'stats.txt'))):
         line = line.strip()
-        if i == 1:
+        if i == 6:
             r = line.strip().split(':')[-1]
             result, plus_minus = re.search(r'([\d.]+) \(\+- ([\d.]+)\)', r).groups()
             l['result (avg) [s]'] = float_round(result)
             l['\'+-'] = float_round(plus_minus)
+        if i == 1:
+            r = line.strip().split(':')[-1]
+            result, plus_minus = re.search(r'([\d.]+) \(\+- ([\d.]+)\)', r).groups()
+            l['result (eval) [s]'] = float_round(result)
+            l['\'+-'] = float_round(plus_minus)
         elif i == 3:
-            l['simulator time [h]'] = float_round(
-                line.strip().split(':')[-1],
-                multiply=(1.0 / (60 * 60)),
-                digits=1
-            )
+            l['simulator time [h]'] = float_round(line.strip().split(':')[-1], digits=1)
         elif i == 4:
             l['result (median) [s]'] = float_round(line.strip().split(':')[-1])
         else:

@@ -23,7 +23,7 @@ class DQLAgent(object):
     # learning_rate = NeuralNet.learning_rate
     # epsilon-greedy factors
     initial_epsilon_greedy = 1  # every action is random action
-    final_epsilon_greedy = 0.0  # every action is not random
+    final_epsilon_greedy = 0.01  # every action is not random
     exploration_time = float(5 * 10**3)  # number of episodes over which epsilon factor is linearly annealed to it's final value
     # start learn after X episodes
     start_learn_after = 5 * 10**2

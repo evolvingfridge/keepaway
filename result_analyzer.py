@@ -28,10 +28,12 @@ ERROR_RE = re.compile(r'Error \(episode: (\d+), step: ([\d.]+)\): ([\d.]+)')
 HISTOGRAM_MAX = 70
 
 STATS = """
-avg episode length (at the end): {avg_episode_length} (+- {avg_episode_length_stdev})
+avg episode length (evaluated, {avg_episodes_eval_count}): {avg_episode_eval_length} (+- {avg_episode_eval_length_stdev})
 avg episodes played: {avg_played}
-avt total (simulator) time played [s]: {avg_time_played}
+avg total (simulator) time played [h]: {avg_time_played}
 median episode length: {median_episode_length}
+
+avg episode length (not evaluated, {avg_episodes_count}): {avg_episode_length} (+- {avg_episode_length_stdev})
 
 =======
 {agent_env}
@@ -110,13 +112,15 @@ def save_histogram(additional_opts):
 # def process_kwy(f_evaluation_std, f_evaluation_confidence, f_window, f_window_episodes, f_window_mean, f_window_episodes_mean):
 def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_std, f_evaluation_confidence):
     evaluation_each, evaluation_length = get_evaluation_params()
-    out_files = (f_window, f_window_episodes, f_evaluation_std, f_evaluation_confidence)
+    out_files = (f_window, f_window_episodes)
     constants_files = (f_window, f_window_episodes)
     i = 0
     max_episode_length = 0
     final_episodes_length = []
+    final_episodes_eval_length = []
     episodes_counts = []
     keepaway_total_times = []
+    evaluation_stats = {}
     for f in os.listdir(args.logs_directory):
         f_name, f_ext = os.path.splitext(f)
         f_full = os.path.join(args.logs_directory, f)
@@ -127,9 +131,12 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
             out_f.write('"{}"\n'.format(f_name.replace('_', ' ')))
         episodes_window = [0] * args.window_size
         episodes_count = 0
+        episodes_count_without_eval = 0
         j = 0
         current_sum = 0
         hours = 0.0
+        last_non_eval_hours = 0.0
+        hours_diff = 0.0
         evaluation_episodes = []
         evaluations = 0
         print('Processing {}'.format(f_full))
@@ -140,25 +147,56 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
                 start_time, end_time, episode_length = map(int, line.split()[1:-1])
                 episode_length /= 10.0
                 episodes_count += 1
+                hours = start_time / (10.0 * 3600)
 
                 # window
-                current_sum -= episodes_window[j]
-                episodes_window[j] = episode_length
-                current_sum += episode_length
-                j = (j + 1) % args.window_size
-                hours = start_time / (10.0 * 3600)
-                if episodes_count >= args.window_size and episodes_count % args.window_write_each == 0:
-                    f_window.write('\t'.join(map(str, (
-                        hours,
-                        current_sum / args.window_size,
-                        '\n'
-                    ))))
-                    f_window_episodes.write('\t'.join(map(str, (
-                        episodes_count,
-                        current_sum / args.window_size,
-                        '\n'
-                    ))))
+                evaluation = episodes_count % evaluation_each <= evaluation_length
+                if episodes_count < evaluation_each:
+                    evaluation = False
+                if not evaluation:
+                    current_sum -= episodes_window[j]
+                    episodes_window[j] = episode_length
+                    current_sum += episode_length
+                    j = (j + 1) % args.window_size
+                    episodes_count_without_eval += 1
+                    last_non_eval_hours = hours
+                    if episodes_count >= args.window_size and episodes_count % args.window_write_each == 0:
+                        f_window.write('\t'.join(map(str, (
+                            hours - hours_diff,
+                            current_sum / args.window_size,
+                            '\n'
+                        ))))
+                        f_window_episodes.write('\t'.join(map(str, (
+                            episodes_count_without_eval,
+                            current_sum / args.window_size,
+                            '\n'
+                        ))))
 
+                # evaluation
+                else:
+                    if episodes_count % evaluation_each < evaluation_length:
+                        evaluation_episodes.append(episode_length)
+                    elif episodes_count % evaluation_each == evaluation_length:
+                        evaluations += 1
+                        hours_diff += (hours - last_non_eval_hours)
+                        if evaluation_episodes:
+                            eval_mean = statistics.mean(evaluation_episodes)
+                            # stdev = statistics.stdev(evaluation_episodes, xbar=eval_mean)
+                            # confidence = 1.96 * stdev / math.sqrt(len(evaluation_episodes))
+                            # f_evaluation_std.write(' '.join(map(str, (
+                            #     episodes_count,
+                            #     eval_mean,
+                            #     stdev,
+                            #     '\n',
+                            # ))))
+                            # f_evaluation_confidence.write(' '.join(map(str, (
+                            #     episodes_count,
+                            #     eval_mean,
+                            #     confidence,
+                            #     '\n',
+                            # ))))
+                            evaluation_episodes = []
+                            evaluation_stats.setdefault(episodes_count, []).append(eval_mean)
                 # window mean
                 # if episodes_count >= args.window_size and episodes_count % args.window_mean_write_each == 0:
                 #     median = statistics.median(episodes_window)
@@ -174,30 +212,11 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
                 #     ))))
 
                 # evaluation
-                if episodes_count % evaluation_each < evaluation_length:
-                    evaluation_episodes.append(episode_length)
-                elif episodes_count % evaluation_each == evaluation_length:
-                    evaluations += 1
-                    if evaluation_episodes:
-                        mean = statistics.mean(evaluation_episodes)
-                        stdev = statistics.stdev(evaluation_episodes, xbar=mean)
-                        confidence = 1.96 * stdev / math.sqrt(len(evaluation_episodes))
-                        f_evaluation_std.write(' '.join(map(str, (
-                            episodes_count,
-                            mean,
-                            stdev,
-                            '\n',
-                        ))))
-                        f_evaluation_confidence.write(' '.join(map(str, (
-                            episodes_count,
-                            mean,
-                            confidence,
-                            '\n',
-                        ))))
-                        evaluation_episodes = []
+            final_episodes_eval_length.append(eval_mean)
             final_episodes_length.append(current_sum / args.window_size)
-            episodes_counts.append(episodes_count)
-            keepaway_total_times.append(end_time)
+            # final_episodes_length.append(statistics.mean(episodes_window))
+            episodes_counts.append(episodes_count_without_eval)
+            keepaway_total_times.append(hours - hours_diff)
         for out_f in out_files:
             out_f.write('\n\n')
 
@@ -206,20 +225,49 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
                 f_histogram.write(str(val) + '\n')
                 max_episode_length = max(max_episode_length, int(val))
 
+    f_evaluation_std.write('Deep-Q-Learning\n')
+    f_evaluation_confidence.write('Deep-Q-Learning\n')
+    for c, values in evaluation_stats.items():
+        eval_mean = statistics.mean(values)
+        stdev = statistics.stdev(values, xbar=eval_mean)
+        confidence = 1.96 * stdev / math.sqrt(len(values))
+        f_evaluation_std.write(' '.join(map(str, (
+            c,
+            eval_mean,
+            stdev,
+            '\n',
+        ))))
+        f_evaluation_confidence.write(' '.join(map(str, (
+            c,
+            eval_mean,
+            confidence,
+            '\n',
+        ))))
+
+    f_evaluation_std.write('\n\n')
+    f_evaluation_confidence.write('\n\n')
+
     if args.draw_constants:
         for out_f in constants_files:
             for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
                 out_f.write('{}\n'.format(metric))
-                for tick in (0, hours if out_f in (f_window,) else episodes_count):
+                for tick in (0, (hours - hours_diff) if out_f in (f_window,) else episodes_count_without_eval):
                     out_f.write(' '.join(map(str, (tick, val, stdev, '\n'))))
                 out_f.write('\n\n')
-    for out_f in out_files:
+    for out_f in out_files + constants_files + (f_evaluation_std, f_evaluation_confidence):
         out_f.flush()
 
     series = i + (3 * args.draw_constants)
+
     f_stats.write(STATS.format(
+        avg_episodes_eval_count=evaluation_length,
+        avg_episode_eval_length=statistics.mean(final_episodes_eval_length),
+        avg_episode_eval_length_stdev=statistics.stdev(final_episodes_eval_length) if len(final_episodes_length) > 1 else 0,
+
+        avg_episodes_count=args.window_size,
         avg_episode_length=statistics.mean(final_episodes_length),
         avg_episode_length_stdev=statistics.stdev(final_episodes_length) if len(final_episodes_length) > 1 else 0,
+
         avg_played=statistics.mean(episodes_counts),
         avg_time_played=statistics.mean(keepaway_total_times),
         median_episode_length=statistics.median(final_episodes_length),
@@ -305,6 +353,8 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
 
     f_mean_q_steps - average Q (predicted) based on step number
     """
+    evaluation_each, evaluation_length = get_evaluation_params()
+    # TODO: respect eval
     out_files = (f_mean_q_delta, f_mean_q_steps, f_mean_starting_q)
     i = 0
     for f in os.listdir(args.logs_directory):

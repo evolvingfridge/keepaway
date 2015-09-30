@@ -1,18 +1,3 @@
-"""
-Code for deep Q-learning as described in:
-
-Playing Atari with Deep Reinforcement Learning
-NIPS Deep Learning Workshop 2013
-
-and
-
-Human-level control through deep reinforcement learning.
-Nature, 518(7540):529-533, February 2015
-
-
-Author of Lasagne port: Nissan Pow
-Modifications: Nathan Sprague
-"""
 import logging
 from collections import OrderedDict
 
@@ -31,49 +16,6 @@ logger = logging.getLogger('keepaway')
 
 def deepmind_rmsprop(loss_or_grads, params, learning_rate,
                      rho, epsilon):
-    """RMSProp updates [1]_.
-
-    Scale learning rates by dividing with the moving average of the root mean
-    squared (RMS) gradients.
-
-    Parameters
-    ----------
-    loss_or_grads : symbolic expression or list of expressions
-        A scalar loss expression, or a list of gradient expressions
-    params : list of shared variables
-        The variables to generate update expressions for
-    learning_rate : float or symbolic scalar
-        The learning rate controlling the size of update steps
-    rho : float or symbolic scalar
-        Gradient moving average decay factor
-    epsilon : float or symbolic scalar
-        Small value added for numerical stability
-
-    Returns
-    -------
-    OrderedDict
-        A dictionary mapping each parameter to its update expression
-
-    Notes
-    -----
-    `rho` should be between 0 and 1. A value of `rho` close to 1 will decay the
-    moving average slowly and a value close to 0 will decay the moving average
-    fast.
-
-    Using the step size :math:`\\eta` and a decay factor :math:`\\rho` the
-    learning rate :math:`\\eta_t` is calculated as:
-
-    .. math::
-       r_t &= \\rho r_{t-1} + (1-\\rho)*g^2\\\\
-       \\eta_t &= \\frac{\\eta}{\\sqrt{r_t + \\epsilon}}
-
-    References
-    ----------
-    .. [1] Tieleman, T. and Hinton, G. (2012):
-           Neural Networks for Machine Learning, Lecture 6.5 - rmsprop.
-           Coursera. http://www.youtube.com/watch?v=O3sxAc4hxZU (formula @5:20)
-    """
-
     grads = get_or_compute_grads(loss_or_grads, params)
     updates = OrderedDict()
 
@@ -115,7 +57,7 @@ class NeuralNetLasagne(object):
     recent_states_to_network = 1
 
     initial_epsilon_greedy = 1  # every action is random action
-    final_epsilon_greedy = 0.0  # every action is not random
+    final_epsilon_greedy = 0.01  # every action is not random
     exploration_time = float(10**4)  # number of episodes over which epsilon factor is linearly annealed to it's final value
     start_learn_after = 5 * 10**2
 
