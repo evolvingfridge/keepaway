@@ -152,11 +152,11 @@ def main():
 
         # start episode
         if stepIn.reward == -1:
+            episode_started = True
             action = agent.start_episode(
                 current_time=stepIn.current_time,
                 current_state=stepIn.state
             )
-            episode_started = True
         elif stepIn.episode_end:
             if episode_started:
                 episodes_count += 1
@@ -164,10 +164,10 @@ def main():
                     regular_episodes += 1
                 if episodes_count % 100 == 1 and not evaluation:
                     logger.warning('Episodes: {}...; current epsilon: {}; current learning rate: {}; frames played: {}'.format(
-                        episodes_count - 1,
-                        agent.epsilon,
-                        agent.learning_rate,
-                        agent.memory.entries_count,
+                        ', '.join(map(str, [episodes_count - 1, regular_episodes] + [a.episodes_played for a in agents])),
+                        ', '.join(map(str, [a.epsilon for a in agents])),
+                        ', '.join(map(str, [a.learning_rate for a in agents])),
+                        ', '.join(map(str, [a.memory.entries_count for a in agents])),
                     ))
             agent.end_episode(current_time=stepIn.current_time)
             for a in agents:
