@@ -64,8 +64,8 @@ RUN cd ~/rcssmonitor_qt4 && ./configure --with-boost-libdir=/usr/lib/x86_64-linu
 #RUN git clone https://github.com/tjpalmer/keepaway.git
 RUN sudo cp /root/.bashrc /home/soccer/.bashrc
 
-RUN wget ftp://www.hensa.ac.uk/sites/distfiles.macports.org/gccmakedep/gccmakedep-1.0.2.tar.bz2
-RUN tar jxf gccmakedep-1.0.2.tar.bz2 && cd ~/gccmakedep-1.0.2 && ./configure && make && sudo make install
+RUN wget ftp://www.hensa.ac.uk/sites/distfiles.macports.org/gccmakedep/gccmakedep-1.0.3.tar.bz2
+RUN tar jxf gccmakedep-1.0.3.tar.bz2 && cd ~/gccmakedep-1.0.3 && ./configure && make && sudo make install
 
 # protobuf
 RUN wget https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz
