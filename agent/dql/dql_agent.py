@@ -141,8 +141,6 @@ class DQLAgent(object):
         self.last_action = None
         self.current_game_total_reward = 0
         self._episode_started = True
-        if self.train:
-            self.episodes_played += 1
         # self.memory.add(np.zeros((self.state_size,)), 0, 0, False)
 
     def _train_minibatch(self):
@@ -217,3 +215,5 @@ class DQLAgent(object):
             if self.train and self.episodes_played > self.start_learn_after:
                 self._epsilon = max(self._epsilon - self._epsilon_change_after_episode, self.final_epsilon_greedy)
                 self.learning_rate = max(self.learning_rate - self._learning_rate_change_after_episode, self.final_learning_rate)
+        # if self.train:
+        #     self.episodes_played += 1

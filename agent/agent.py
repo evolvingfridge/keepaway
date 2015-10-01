@@ -65,11 +65,17 @@ parser.add_argument('--clip-delta', type=float, action=EnvDefault, envvar='CLIP_
 
 parser.add_argument('--use-lasagne', type=bool, action=EnvDefault, envvar='USE_LASAGNE')
 
+parser.add_argument('--multi-agent', type=bool, default=True, action=EnvDefault, envvar='MULTI_AGENT')
+parser.add_argument('--keepers-count', type=int, default=3, action=EnvDefault, envvar='KEEPERS_COUNT')
+
 # other params
 parser.add_argument('--evaluate-agent-each', type=int, default=600,  metavar='X', help='Evaluate network (without training) every X episodes', action=EnvDefault, envvar='EVALUATE_AGENT_EACH')
 parser.add_argument('--evaluation-episodes', type=int, default=100,  metavar='Y', help='Evaluation time (in episodes)', action=EnvDefault, envvar='EVALUATION_EPISODES')
 parser.add_argument('--evaluation-epsilon', type=float, default=0.0, action=EnvDefault, envvar='EVALUATION_EPSILON')
+parser.add_argument('--final-evaluation', type=int, default=1000, action=EnvDefault, envvar='FINAL_EVALUATION')
+
 parser.add_argument('--logger-level', type=str, default='WARNING',  metavar='L', choices=['WARNING', 'INFO', 'DEBUG'], help='Logger level', action=EnvDefault, envvar='LOGGER_LEVEL')
+
 
 args = parser.parse_args()
 
@@ -114,14 +120,19 @@ def main():
     for v in ('learning_rate', 'constant_learning_rate'):
         if agent_kwargs.get(v):
             agent_kwargs['start_learning_rate'] = agent_kwargs['final_learning_rate'] = agent_kwargs[v]
-    agent = DQLAgent(**agent_kwargs)
+
+    agents = [DQLAgent(**agent_kwargs) for i in range(args.keepers_count if args.multi_agent else 1)]
+    # agent = DQLAgent(**agent_kwargs)
     # agent = HandCodedAgent(**agent_kwargs)
     pid2id = {}
     current_id = 0
 
     episodes_count = 1
+    regular_episodes = 1
     evaluation_episodes_count = 0
     evaluation = False
+    episode_started = False
+    in_final_eval = False
 
     logger.info('Ready to receive...')
     while True:
@@ -134,7 +145,10 @@ def main():
 
         if stepIn.player_pid not in pid2id:
             pid2id[stepIn.player_pid] = current_id
-            current_id += 1
+            if args.multi_agent:
+                current_id += 1
+
+        agent = agents[pid2id[stepIn.player_pid]]
 
         # start episode
         if stepIn.reward == -1:
@@ -142,10 +156,12 @@ def main():
                 current_time=stepIn.current_time,
                 current_state=stepIn.state
             )
+            episode_started = True
         elif stepIn.episode_end:
-            episode_started = agent._episode_started
             if episode_started:
                 episodes_count += 1
+                if not evaluation:
+                    regular_episodes += 1
                 if episodes_count % 100 == 1 and not evaluation:
                     logger.warning('Episodes: {}...; current epsilon: {}; current learning rate: {}; frames played: {}'.format(
                         episodes_count - 1,
@@ -154,26 +170,36 @@ def main():
                         agent.memory.entries_count,
                     ))
             agent.end_episode(current_time=stepIn.current_time)
-            if args.stop_after_episodes and args.stop_after_episodes == episodes_count:
-                break
+            for a in agents:
+                a.episodes_played = regular_episodes
+            if args.stop_after_episodes:
+                if episodes_count >= (args.stop_after_episodes - args.final_evaluation):
+                    in_final_eval = True
+                if args.stop_after_episodes == episodes_count:
+                    break
             action = 0
 
             # evaluation
             if episode_started:
-                if evaluation:
+                if evaluation or in_final_eval:
                     evaluation_episodes_count += 1
-                if episodes_count > 0 and episodes_count % args.evaluate_agent_each == 1:
-                    agent.train = False
+                if episodes_count > 0 and (episodes_count % args.evaluate_agent_each == 1 or in_final_eval):
+                    for a in agents:
+                        a.train = False
+                    if not evaluation:
+                        logger.warning('Starting evaluation at {} (simulator time: {}) with epsilon {}'.format(episodes_count, stepIn.current_time, agent.epsilon))
                     evaluation = True
-                    logger.warning('Starting evaluation at {} (simulator time: {}) with epsilon {}'.format(episodes_count, stepIn.current_time, agent.epsilon))
-                if evaluation_episodes_count == args.evaluation_episodes:
+                if evaluation_episodes_count == args.evaluation_episodes and not in_final_eval:
                     logger.warning('Evaluation end after {} episodes (simulator time: {}, total episodes: {})'.format(evaluation_episodes_count, stepIn.current_time, episodes_count - 1))
                     evaluation = False
-                    agent.train = True
+                    for a in agents:
+                        a.train = True
                     evaluation_episodes_count = 0
                     # save current network
-                    with open(network_filepath + '__eval_{}'.format(episodes_count), 'a') as f:
-                        cPickle.dump(agent.nnet, f, -1)
+                    # with open(network_filepath + '__eval_{}'.format(episodes_count), 'a') as f:
+                    #     cPickle.dump(agent.nnet, f, -1)
+
+            episode_started = False
         else:
             action = agent.step(
                 current_time=stepIn.current_time,
@@ -182,8 +208,9 @@ def main():
         stepOut.action = action
         out = stepOut.SerializeToString()
         socket.send(out)
-    with open(network_filepath, 'a') as f:
-        cPickle.dump(agent.nnet, f, -1)
+    for i, agent in enumerate(agents):
+        with open(network_filepath + '__agent_{}'.format(i), 'a') as f:
+            cPickle.dump(agent.nnet, f, -1)
 
 if __name__ == '__main__':
     main()

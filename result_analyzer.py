@@ -229,7 +229,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
     f_evaluation_confidence.write('Deep-Q-Learning\n')
     for c, values in evaluation_stats.items():
         eval_mean = statistics.mean(values)
-        stdev = statistics.stdev(values, xbar=eval_mean)
+        stdev = statistics.stdev(values, xbar=eval_mean) if len(values) > 1 else 0
         confidence = 1.96 * stdev / math.sqrt(len(values))
         f_evaluation_std.write(' '.join(map(str, (
             c,
