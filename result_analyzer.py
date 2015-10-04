@@ -28,12 +28,12 @@ ERROR_RE = re.compile(r'Error \(episode: (\d+), step: ([\d.]+)\): ([\d.]+)')
 HISTOGRAM_MAX = 70
 
 STATS = """
-avg episode length (evaluated, {avg_episodes_eval_count}): {avg_episode_eval_length} (+- {avg_episode_eval_length_stdev})
-avg episodes played: {avg_played}
-avg total (simulator) time played [h]: {avg_time_played}
-median episode length: {median_episode_length}
+avg episode length (not evaluated, {avg_episodes_count}): {avg_episode_length_final_eval} (+- {avg_episode_length_stdev_final_eval})
+median episode length (not evaluated, {avg_episodes_count}): {median_episode_length_final_eval}
 
-avg episode length (not evaluated, {avg_episodes_count}): {avg_episode_length} (+- {avg_episode_length_stdev})
+avg episodes played: {avg_played}
+avg total (simulator) time played (on learning) [h]: {avg_time_played}
+
 
 =======
 {agent_env}
@@ -340,18 +340,14 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
     series = i + (3 * args.draw_constants)
 
     f_stats.write(STATS.format(
-        avg_episodes_eval_count=evaluation_length,
-        avg_episode_eval_length=statistics.mean(final_episodes_eval_length),
-        avg_episode_eval_length_stdev=statistics.stdev(final_episodes_eval_length) if len(final_episodes_length) > 1 else 0,
-
         avg_episodes_count=args.window_size,
-        avg_episode_length=statistics.mean(final_episodes_length),
-        avg_episode_length_stdev=statistics.stdev(final_episodes_length) if len(final_episodes_length) > 1 else 0,
+        avg_episode_length_final_eval=statistics.mean(final_episodes_length),
+        avg_episode_length_stdev_final_eval=statistics.stdev(final_episodes_length) if len(final_episodes_length) > 1 else 0,
+        median_episode_length_final_eval=statistics.median(final_episodes_length),
 
         avg_played=statistics.mean(episodes_counts),
         avg_time_played=statistics.mean(keepaway_total_times),
-        median_episode_length=statistics.median(final_episodes_length),
-        agent_env=get_agent_env(),
+        agent_env=get_agent_env(),  
     ))
     # window episodes
     save_graph({
