@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import datetime
 import math
 import os
 import re
@@ -20,6 +21,7 @@ parser.add_argument('--evaluation-each', default=None, type=int)
 parser.add_argument('--evaluation-length', default=None, type=int)
 parser.add_argument('--window-write-each', default=10, type=int)
 parser.add_argument('--window-mean-write-each', default=10, type=int)
+parser.add_argument('--evaluation-write-each', default=2, type=int)
 
 args = parser.parse_args()
 
@@ -33,6 +35,7 @@ median episode length (not evaluated, {avg_episodes_count}): {median_episode_len
 
 avg episodes played: {avg_played}
 avg total (simulator) time played (on learning) [h]: {avg_time_played}
+avg real time [min]: {avg_real_time}
 
 
 =======
@@ -164,12 +167,16 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
     episodes_counts = []
     keepaway_total_times = []
     evaluation_stats = {}
+    processing_time = []
     for f in os.listdir(args.logs_directory):
         f_name, f_ext = os.path.splitext(f)
         f_full = os.path.join(args.logs_directory, f)
         if f_ext not in ('.kwy', ):
             continue
         i += 1
+        modification_time = os.path.getmtime(f_full)
+        creation_time = datetime.datetime.strptime(f_name.split('-')[0], '%Y%m%d%H%M') + datetime.timedelta(minutes=120)
+        processing_time.append(round((modification_time - creation_time.timestamp()) / 60.0, 0))
         for out_f in out_files:
             out_f.write('"{}"\n'.format(f_name.replace('_', ' ')))
         episodes_window = [0] * args.window_size
@@ -223,7 +230,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
                     elif episodes_count % evaluation_each == evaluation_length:
                         evaluations += 1
                         hours_diff += (hours - last_non_eval_hours)
-                        if evaluation_episodes:
+                        if evaluation_episodes and evaluations % args.evaluation_write_each == 0:
                             eval_mean = statistics.mean(evaluation_episodes)
                             # stdev = statistics.stdev(evaluation_episodes, xbar=eval_mean)
                             # confidence = 1.96 * stdev / math.sqrt(len(evaluation_episodes))
@@ -297,7 +304,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
         #     stdev,
         #     '\n',
         # ))))
-        max_eval = c - (i+2) * evaluation_length
+        max_eval = c - ((i*args.evaluation_write_each)+3) * evaluation_length
         f_evaluation_stats.write('\t'.join(map(str, (
             max_eval,                        # 1
             round(min(values), 2),    # 2
@@ -347,7 +354,8 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
 
         avg_played=statistics.mean(episodes_counts),
         avg_time_played=statistics.mean(keepaway_total_times),
-        agent_env=get_agent_env(),  
+        avg_real_time=statistics.mean(processing_time),
+        agent_env=get_agent_env(),
     ))
     # window episodes
     save_graph({
@@ -408,7 +416,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
         'out_file': os.path.join(args.logs_directory, 'window_graph_eval_conf.{}'.format(PLOT_EXT)),
         'plot_options': 'w yerrorbars',
         'x_title': 'Episodes count',
-        'title': 'Avg episode duration during evaluation with confidence ({} every {} episodes)'.format(evaluation_length, evaluation_each),
+        'title': 'Avg episode duration during evaluation with confidence ({} every {} episodes)'.format(evaluation_length, evaluation_each * args.evaluation_write_each),
     }, series)
 
     save_graph({
@@ -418,7 +426,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
         # 'plot_options': 'w yerrorbars',
         'plot_options': 'w points',
         'x_title': 'Episodes count',
-        'title': 'Median episode duration during evaluation ({} every {} episodes)'.format(evaluation_length, evaluation_each),
+        'title': 'Median episode duration during evaluation ({} every {} episodes)'.format(evaluation_length, evaluation_each * args.evaluation_write_each),
     }, series)
 
     save_eval_graph({
@@ -429,11 +437,11 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
         'max_y': max([max(v) for v in evaluation_stats.values()]) * 1.2,
         'out_file': os.path.join(args.logs_directory, 'window_graph_eval_box.{}'.format(PLOT_EXT)),
         'x_title': 'Episodes count',
-        'title': 'Average episode duration during evaluation ({} every {} episodes)'.format(evaluation_length, evaluation_each-evaluation_length),
+        'title': 'Average episode duration during evaluation ({} every {} episodes)'.format(evaluation_length, (evaluation_each-evaluation_length) * args.evaluation_write_each),
     })
 
 
-def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
+def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q, f_mean_q_delta_eval, f_mean_q_steps_eval):
     """
     f_mean_q_delta - average delta in episode in time
         for single episode is AVG(|Q_predicted - Q_expected|) which is AVG(error)
@@ -442,7 +450,7 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
     """
     evaluation_each, evaluation_length = get_evaluation_params()
     # TODO: respect eval
-    out_files = (f_mean_q_delta, f_mean_q_steps, f_mean_starting_q)
+    out_files = (f_mean_q_delta, f_mean_q_steps, f_mean_starting_q, f_mean_q_delta_eval)
     i = 0
     for f in os.listdir(args.logs_directory):
         f_name, f_ext = os.path.splitext(f)
@@ -450,10 +458,14 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
         if not f_name.startswith('agent') or f == 'agent.env':
             continue
         i += 1
+        if i > 2:
+            continue
         for out_f in out_files:
             # out_f.write('"{}"\n'.format(f_name.split('_')[-1].replace('_', ' ')))
             out_f.write('"{}"\n'.format(f.split('_')[-1].replace('_', ' ')))
 
+        eval_mean_error = defaultdict(list)
+        evaluations = set()
         with open(f_full) as f_obj:
             current_episode = -1
             current_episode_error_sum = 0
@@ -489,6 +501,14 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
                     current_episode_actions_count += 1
                     current_episode_error_sum += error
 
+                    evaluation = episode % evaluation_each <= evaluation_length
+                    if episode < evaluation_each:
+                        evaluation = False
+                    if evaluation:
+                        eval_ep = int(episode / 100.0) * 100
+                        evaluations.add(eval_ep)
+                        eval_ep -= ()
+                        eval_mean_error[eval_ep].append(error)
                     if episode > current_episode + args.mean_q_window_size:
                         if current_episode > 0:
                             f_mean_q_delta.write(' '.join(map(str, (
@@ -515,8 +535,12 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
                     prev,
                     '\n'
                 ))))
+        for eval_ep, errors in sorted(eval_mean_error.items(), key=lambda x: x[0]):
+            f_mean_q_delta_eval.write('{} {}\n'.format(eval_ep, statistics.mean(errors)))
+
         for out_f in out_files:
             out_f.write('\n\n')
+
     for out_f in out_files:
         out_f.flush()
 
@@ -532,6 +556,16 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q):
         'y_title': '|Q_expected - Q_predicted|',
         'title': 'Avg Q delta (network error) in episode in time',
     }, series)
+
+    # save_graph({
+    #     'cols': '1:2',
+    #     'file': f_mean_q_delta_eval.name,
+    #     'out_file': os.path.join(args.logs_directory, 'mean_q_delta_eval.{}'.format(PLOT_EXT)),
+    #     'plot_options': 'w lines',
+    #     'x_title': 'Episodes',
+    #     'y_title': '|Q_expected - Q_predicted|',
+    #     'title': 'Avg Q delta (network error) in episode in time',
+    # }, series)
 
     save_graph({
         'cols': '1:3',
@@ -566,16 +600,18 @@ def main():
         with tempfile.NamedTemporaryFile('w') as f_window_episodes:
             with open(os.path.join(args.logs_directory, 'stats.txt'), 'w') as f_stats:
                 with tempfile.NamedTemporaryFile('w') as f_histogram:
-                    with tempfile.NamedTemporaryFile('w') as f_evaluation_std:
-                        with tempfile.NamedTemporaryFile('w') as f_evaluation_confidence:
+                    with tempfile.NamedTemporaryFile('w') as f_evaluation_raw:
+                        with open(os.path.join(args.logs_directory, 'evaluation_stats2gnuplot.txt'), 'w') as f_evaluation_stats:
                             #     with tempfile.NamedTemporaryFile('w') as f_window_episodes_mean:
-                            process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_std, f_evaluation_confidence)
+                            process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_raw, f_evaluation_stats)
 
     # process agent log files
     # with tempfile.NamedTemporaryFile('w') as f_mean_q_delta:
     #     with tempfile.NamedTemporaryFile('w') as f_mean_q_steps:
     #         with tempfile.NamedTemporaryFile('w') as f_mean_starting_q:
-    #             process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q)
+    #             # with open(os.path.join(args.logs_directory, 'mean_q_delta2gnuplot.txt'), 'w') as f_mean_q_delta_eval:
+    #             #     with open(os.path.join(args.logs_directory, 'mean_q_steps2gnuplot.txt'), 'w') as f_mean_q_steps_eval:
+    #                 process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q, f_mean_q_delta_eval, f_mean_q_steps_eval)
 
 if __name__ == '__main__':
     main()

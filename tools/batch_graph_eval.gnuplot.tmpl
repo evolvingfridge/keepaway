@@ -1,0 +1,29 @@
+# Color output
+set terminal {terminal}
+
+# Output file
+set output "{out_file}"
+
+# Title
+## set title "{title}"
+
+# Appearance
+set border 3
+set grid
+set style fill solid 0.0 border  -1
+set boxwidth 50.0 absolute
+set style data lines
+set key below autotitle columnheader
+
+# Axes
+set xrange [0:{max_x}]
+set xlabel "{x_title}"
+## set xtics nomirror rotate by 45 offset -1.7,-1.2
+set ytics nomirror
+set yrange [0:{max_y}]
+set ylabel "{y_title}"
+
+# Plot Data
+set multiplot
+plot for [IDX=0:{series}] '{file_stats}' i IDX using {cols} with lines
+
