@@ -65,19 +65,25 @@ def parse_stats():
 
 def make_plots(stats):
     # eval every 500/1000 episodes
+    params = []
+    for d_name, d in get_dirs():
+        params.append(d_name.split('___')[1:])
+
+    important_params = []
+    for i, p in enumerate(zip(*params)):
+        if len(set(p)) != 1:
+            important_params.append(i+1)
+
     with tempfile.NamedTemporaryFile('w') as f_eval_stats:
         print(f_eval_stats.name)
         i = 0
-        params = []
-        for d_name, d in get_dirs():
-            params.append(d_name.split('___')[1:])
-
-        important_params = []
-        for i, p in enumerate(zip(*params)):
-            if len(set(p)) != 1:
-                important_params.append(i+1)
-
         # eval stats
+        for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
+            f_eval_stats.write(metric + '\n')
+            for ep in (0, 20000):
+                f_eval_stats.write('\t'.join(map(str, (ep, 0, 0, val, val, 0, stdev, 0, 0, '\n'))))
+            f_eval_stats.write('\n\n')
+
         for d_name, d in get_dirs():
             i += 1
             header = []
@@ -91,21 +97,16 @@ def make_plots(stats):
                     f_eval_stats.write('\t'.join(map(str, ('20000', '0', '0', stats[d_name]['result (avg) [s]'], stats[d_name]['result (median) [s]'], '0', stats[d_name]['\'+-'], '0', '0', '\n'))))
             f_eval_stats.write('\n\n')
 
-        for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
-            f_eval_stats.write(metric + '\n')
-            for ep in (0, 20000):
-                f_eval_stats.write('\t'.join(map(str, (ep, 0, 0, val, val, 0, stdev, 0, 0, '\n'))))
-            f_eval_stats.write('\n\n')
         f_eval_stats.flush()
         options = {
             'max_x': "21000",
             'max_y': "22",
             'title': 'Graph',
-            'x_title': 'Episodes count',
-            'y_title': 'Episode Duration (seconds)',
+            'x_title': 'Episodes',
+            'y_title': 'Performance (episode duration in seconds)',
             'terminal': 'svg',
             'file_stats': f_eval_stats.name,
-            'series': i,
+            'series': i+3,
         }
         for exp in PLOT_EXT:
             additional_opts = {
@@ -134,18 +135,49 @@ def make_plots(stats):
                         subprocess.call(['gnuplot', f_graph.name])
 
         # agent logs
-        for d_name, d in get_dirs():
-            i += 1
-            header = []
-            for p in important_params:
-                header.append(d_name.split('___')[p])
-            f_eval_stats.write('"{}"'.format(', '.join(header)).replace('_', '-') + '\n')
-            for line in open(d + '/evaluation_stats2gnuplot.txt'):
-                if not line.startswith('20000'):
-                    f_eval_stats.write(line)
-                else:
-                    f_eval_stats.write('\t'.join(map(str, ('20000', '0', '0', stats[d_name]['result (avg) [s]'], stats[d_name]['result (median) [s]'], '0', stats[d_name]['\'+-'], '0', '0', '\n'))))
-            f_eval_stats.write('\n\n')
+    # with tempfile.NamedTemporaryFile('w') as f_mean_error:
+    #     for d_name, d in get_dirs():
+    #         i += 1
+    #         header = []
+    #         for p in important_params:
+    #             header.append(d_name.split('___')[p])
+    #         f_mean_error.write('"{}"'.format(', '.join(header)).replace('_', '-') + '\n')
+    #         for line in open(d + '/mean_q_delta2gnuplot.txt'):
+    #             f_mean_error.write(line)
+    #         f_mean_error.write('\n\n')
+
+    #     f_eval_stats.flush()
+    #     options = {
+    #         'max_x': "21000",
+    #         'max_y': "300",
+    #         'title': 'Graph',
+    #         'x_title': 'Episodes count',
+    #         'y_title': 'Mean network error',
+    #         'terminal': 'svg',
+    #         'file_stats': f_eval_stats.name,
+    #         'series': i,
+    #     }
+    #     for exp in PLOT_EXT:
+    #         additional_opts = {
+    #             '1:2:2': {
+    #                 # 'title': 'Average episode duration during evaluation (100 every 1000 episodes)',
+    #                 'out_file': os.path.join(sys.argv[-1], 'avg_q_error.{}'.format(exp)),
+    #             }
+    #         }
+    #         if exp == 'eps':
+    #             exp = 'postscript eps enhanced color'
+    #         for cols, add_opts in additional_opts.items():
+    #             window_opts = options.copy()
+    #             window_opts.update(add_opts)
+    #             window_opts['cols'] = cols
+    #             window_opts['terminal'] = exp
+    #             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tools', 'batch_graph_eval.gnuplot.tmpl')) as graph_tmpl:
+    #                 with tempfile.NamedTemporaryFile('w') as f_graph:
+    #                     g = graph_tmpl.read().format(**window_opts)
+    #                     f_graph.write(g)
+    #                     f_graph.flush()
+    #                     print(f_graph.name)
+    #                     subprocess.call(['gnuplot', f_graph.name])
 
 stats = parse_stats()
 make_plots(stats)

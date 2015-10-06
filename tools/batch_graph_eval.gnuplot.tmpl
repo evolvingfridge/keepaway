@@ -15,6 +15,19 @@ set boxwidth 50.0 absolute
 set style data lines
 set key below autotitle columnheader
 
+# styles of constants
+set style line 1 linecolor rgb '#4B0082' linetype 1 linewidth 1 pointtype 10 pointsize 1.2
+set style line 2 linecolor rgb '#7F7F7F' linetype 2 linewidth 1 pointtype 2 pointsize 1.2
+set style line 3 linecolor rgb '#800000' linetype 3 linewidth 1 pointtype 3 pointsize 1.2
+
+set style line 4 linecolor rgb "red" linetype 4 linewidth 1.5 pointtype 4 pointsize 1.2
+set style line 5 linecolor rgb "black" linetype 6 linewidth 1.5 pointtype 6 pointsize 1.2
+set style line 6 linecolor rgb "blue" linetype 9 linewidth 1.5 pointtype 9 pointsize 1.2
+set style line 7 linecolor rgb "green" linetype 7 linewidth 1.5 pointtype 7 pointsize 1.2
+set style line 8 linecolor rgb "orange" linetype 5 linewidth 1.5 pointtype 5 pointsize 1.2
+set style line 9 linecolor rgb "cyan" linetype 8 linewidth 1.5 pointtype 8 pointsize 1.2
+set style line 10 linecolor rgb "#FF1493" linetype 1 linewidth 1.5 pointtype 11 pointsize 1.2
+
 # Axes
 set xrange [0:{max_x}]
 set xlabel "{x_title}"
@@ -25,5 +38,7 @@ set ylabel "{y_title}"
 
 # Plot Data
 set multiplot
-plot for [IDX=0:{series}] '{file_stats}' i IDX using {cols} with lines
+## plot for [IDX=0:{series}] '{file_stats}' i IDX using {cols} with lines, \
+##      for [IDX=0:{series}] '' i IDX using {cols} with points
+plot for [IDX=0:{series}] '{file_stats}' i IDX using {cols} with linespoints ls (IDX+1)
 

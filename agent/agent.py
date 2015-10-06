@@ -75,7 +75,8 @@ parser.add_argument('--evaluation-epsilon', type=float, default=0.0, action=EnvD
 parser.add_argument('--final-evaluation', type=int, default=1000, action=EnvDefault, envvar='FINAL_EVALUATION')
 
 parser.add_argument('--logger-level', type=str, default='WARNING',  metavar='L', choices=['WARNING', 'INFO', 'DEBUG'], help='Logger level', action=EnvDefault, envvar='LOGGER_LEVEL')
-
+parser.add_argument('--load-nnets', type=str, action=EnvDefault, envvar='LOAD_NNETS')
+parser.add_argument('--initial-episodes', type=int, default=25000, action=EnvDefault, envvar='INITIAL_EPISODES')
 
 args = parser.parse_args()
 
@@ -121,18 +122,30 @@ def main():
         if agent_kwargs.get(v):
             agent_kwargs['start_learning_rate'] = agent_kwargs['final_learning_rate'] = agent_kwargs[v]
 
-    agents = [DQLAgent(**agent_kwargs) for i in range(args.keepers_count if args.multi_agent else 1)]
-    # agent = DQLAgent(**agent_kwargs)
-    # agent = HandCodedAgent(**agent_kwargs)
-    pid2id = {}
-    current_id = 0
-
     episodes_count = 1
     regular_episodes = 1
     evaluation_episodes_count = 0
     evaluation = False
     episode_started = False
     in_final_eval = False
+
+    agents = [DQLAgent(**agent_kwargs) for i in range(args.keepers_count if args.multi_agent else 1)]
+    if args.load_nnets:
+        print('using defined nnets')
+        for i, a in enumerate(agents):
+            with open(os.path.expanduser('~/logs/' + args.load_nnets + '__agent_{}'.format(i)), 'r') as f:
+                print(f.name)
+                a.nnet = cPickle.load(f)
+                a.episodes_played = args.initial_episodes
+                a.nnet.episodes_played = args.initial_episodes
+                a._epsilon = args.final_epsilon_greedy
+                a.learning_rate = args.final_learning_rate
+        episodes_count = args.initial_episodes
+        regular_episodes = args.initial_episodes
+    # agent = DQLAgent(**agent_kwargs)
+    # agent = HandCodedAgent(**agent_kwargs)
+    pid2id = {}
+    current_id = 0
 
     logger.info('Ready to receive...')
     while True:

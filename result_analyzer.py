@@ -458,8 +458,8 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q, f_mean
         if not f_name.startswith('agent') or f == 'agent.env':
             continue
         i += 1
-        if i > 2:
-            continue
+        # if i > 2:
+        #     continue
         for out_f in out_files:
             # out_f.write('"{}"\n'.format(f_name.split('_')[-1].replace('_', ' ')))
             out_f.write('"{}"\n'.format(f.split('_')[-1].replace('_', ' ')))
@@ -588,6 +588,63 @@ def process_agent_logs(f_mean_q_delta, f_mean_q_steps, f_mean_starting_q, f_mean
     }, series)
 
 
+def process_agent_logs2(f_mean_q_delta):
+    """
+    f_mean_q_delta - average delta in episode in time
+        for single episode is AVG(|Q_predicted - Q_expected|) which is AVG(error)
+
+    f_mean_q_steps - average Q (predicted) based on step number
+    """
+    errors = defaultdict(list)
+
+    for f in os.listdir(args.logs_directory):
+        f_name, f_ext = os.path.splitext(f)
+        f_full = os.path.join(args.logs_directory, f)
+        if not f_name.startswith('agent') or f == 'agent.env':
+            continue
+
+        print('processing ' + f)
+
+        with open(f_full) as f_obj:
+            current_episode = -1
+            current_episode_error_sum = 0
+            current_episode_actions_count = 0
+
+            for line in f_obj:
+                error_val = re.search(ERROR_RE, line)  # returns (episode, step, error)
+
+                if error_val:
+                    episode, step, error = error_val.groups()
+                    episode = int(episode)
+                    step = int(float(step))
+                    error = float(error)
+
+                    current_episode_actions_count += 1
+                    current_episode_error_sum += error
+                    if episode > current_episode:
+                        if current_episode > 0:
+                            errors[current_episode].append(
+                                current_episode_error_sum / current_episode_actions_count if current_episode_actions_count != 0 else 0
+                            )
+                        current_episode = episode
+                        current_episode_actions_count = 1
+                        current_episode_error_sum = error
+
+    WINDOW_SIZE = 100
+    WRITE_EACH = 25
+    current_sum = 0.0
+    items = 0
+    for i, (e, vals) in enumerate(sorted(errors.items(), key=lambda x: x[0])):
+        current_sum += sum(vals)
+        items += len(vals)
+        if i > WINDOW_SIZE:
+            current_sum -= sum(errors[e - WINDOW_SIZE])
+            items -= len(errors[e - WINDOW_SIZE])
+
+            if i % WRITE_EACH == 0:
+                f_mean_q_delta.write('\t'.join(map(str, (e, current_sum / items, '\n'))))
+
+
 def main():
     if not os.path.isdir(args.logs_directory):
         print("logs directory isn't directory")
@@ -606,6 +663,8 @@ def main():
                             process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_raw, f_evaluation_stats)
 
     # process agent log files
+    with open(os.path.join(args.logs_directory, 'mean_q_delta2gnuplot.txt'), 'w') as f_mean_q_delta:
+        process_agent_logs2(f_mean_q_delta)
     # with tempfile.NamedTemporaryFile('w') as f_mean_q_delta:
     #     with tempfile.NamedTemporaryFile('w') as f_mean_q_steps:
     #         with tempfile.NamedTemporaryFile('w') as f_mean_starting_q:
