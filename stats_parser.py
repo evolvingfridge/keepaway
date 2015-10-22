@@ -91,12 +91,9 @@ def make_plots(stats):
                 header.append(d_name.split('___')[p])
             f_eval_stats.write('"{}"'.format(', '.join(header)).replace('_', '-') + '\n')
             for line in open(d + '/evaluation_stats2gnuplot.txt'):
-                if not line.startswith('20000'):
-                    f_eval_stats.write(line)
-                else:
-                    f_eval_stats.write('\t'.join(map(str, ('20000', '0', '0', stats[d_name]['result (avg) [s]'], stats[d_name]['result (median) [s]'], '0', stats[d_name]['\'+-'], '0', '0', '\n'))))
+                f_eval_stats.write(line)
+            # f_eval_stats.write('\t'.join(map(str, (last_line.split()[0], '0', '0', stats[d_name]['result (avg) [s]'], stats[d_name]['result (median) [s]'], '0', stats[d_name]['\'+-'], '0', '0', '\n'))))
             f_eval_stats.write('\n\n')
-
         f_eval_stats.flush()
         options = {
             'max_x': "21000",

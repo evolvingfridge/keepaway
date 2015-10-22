@@ -170,6 +170,7 @@ def main():
                 current_time=stepIn.current_time,
                 current_state=stepIn.state
             )
+            logger.warning('start episode {} for {}'.format(episodes_count, stepIn.player_pid))
         elif stepIn.episode_end:
             if episode_started:
                 episodes_count += 1
@@ -183,6 +184,7 @@ def main():
                         ', '.join(map(str, [a.memory.entries_count for a in agents])),
                     ))
             agent.end_episode(current_time=stepIn.current_time)
+            logger.warning('end episode {} for {}'.format(episodes_count-1, stepIn.player_pid))
             for a in agents:
                 a.episodes_played = regular_episodes
             if args.stop_after_episodes:

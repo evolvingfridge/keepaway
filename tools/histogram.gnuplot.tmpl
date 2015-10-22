@@ -1,7 +1,7 @@
 set terminal {terminal}
 set output "{out_file}"
-set title "{title}"
-set xlabel "Episode length [s]"
+## set title "{title}"
+set xlabel "Episode duration [s]"
 set ylabel "Number of episodes"
 
 n={n} #number of intervals
@@ -18,4 +18,4 @@ set grid ytics xtics
 set grid
 
 #count and plot
-plot '{file}' u (hist($1,width)):({div}) smooth freq w boxes lc rgb"green" notitle
+plot '{file}' u (hist($1,width)):({div}) smooth freq w boxes lc rgb"blue" notitle

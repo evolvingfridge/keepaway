@@ -25,5 +25,5 @@ set yrange [{min_y}:]
 set ylabel "{y_title}"
 
 # Plot Data
-plot for [IDX=0:{series}] '{file}' i IDX u {cols} {plot_options} title columnheader(1)
+plot for [IDX=0:{series}] '{file}' i IDX u {cols} {plot_options} notitle
 
