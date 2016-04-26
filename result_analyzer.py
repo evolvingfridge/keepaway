@@ -261,7 +261,8 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
                             #     '\n',
                             # ))))
                             evaluation_episodes = []
-                            evaluation_stats.setdefault(episodes_count, []).append(eval_mean)
+                            if episodes_count != 30100:
+                                evaluation_stats.setdefault(episodes_count, []).append(eval_mean)
                 # window mean
                 # if episodes_count >= args.window_size and episodes_count % args.window_mean_write_each == 0:
                 #     median = statistics.median(episodes_window)
@@ -283,7 +284,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
             episodes_counts.append(episodes_count_without_eval)
             keepaway_total_times.append(hours - hours_diff)
 
-        evaluation_stats.setdefault(25300, []).append(current_sum / args.window_size)
+        evaluation_stats.setdefault(30100, []).append(current_sum / args.window_size)
         for out_f in out_files:
             out_f.write('\n\n')
 
@@ -291,7 +292,6 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
             if val <= HISTOGRAM_MAX:
                 f_histogram.write(str(val) + '\n')
                 max_episode_length = max(max_episode_length, int(val))
-
 
     # f_evaluation_raw.write('Deep-Q-Learning\n')
     # f_evaluation_stats.write('Deep-Q-Learning\n')

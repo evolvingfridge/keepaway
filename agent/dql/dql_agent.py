@@ -145,11 +145,11 @@ class DQLAgent(object):
 
     def _train_minibatch(self):
         if self.train and self.episodes_played > self.start_learn_after:
-            logger.debug('Training minibatch of size {}'.format(self.minibatch_size))
+            logger.debug('Training minibatch of size {} with LR {}'.format(self.minibatch_size, self.learning_rate))
             minibatch = self.memory.get_minibatch(self.minibatch_size)
             logger.debug('Minibatch (prestates, actions, rewards, poststates, terminals):\n {}'.format(minibatch))
             error = self.nnet.train_minibatch(minibatch, self.learning_rate)
-            logger.info('Error (episode: {}, step: {}): {}'.format(self.episodes_played, self.step_number, error))
+            logger.info('Error (episode: {}, step: {}, LR: {}): {}'.format(self.episodes_played, self.step_number, self.learning_rate, error))
 
     def _remember_in_memory(self, reward, is_terminal=False):
         """
