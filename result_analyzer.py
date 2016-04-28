@@ -261,7 +261,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
                             #     '\n',
                             # ))))
                             evaluation_episodes = []
-                            if episodes_count != 30100:
+                            if episodes_count != 25300:
                                 evaluation_stats.setdefault(episodes_count, []).append(eval_mean)
                 # window mean
                 # if episodes_count >= args.window_size and episodes_count % args.window_mean_write_each == 0:
@@ -284,7 +284,7 @@ def process_kwy(f_window, f_window_episodes, f_stats, f_histogram, f_evaluation_
             episodes_counts.append(episodes_count_without_eval)
             keepaway_total_times.append(hours - hours_diff)
 
-        evaluation_stats.setdefault(30100, []).append(current_sum / args.window_size)
+        # evaluation_stats.setdefault(25300, []).append(current_sum / args.window_size)
         for out_f in out_files:
             out_f.write('\n\n')
 

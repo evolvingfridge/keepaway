@@ -9,11 +9,21 @@ set output "{out_file}"
 
 # Appearance
 set border 3
-set grid
+## set grid
 set style fill solid 0.0 border  -1
 set boxwidth 90.0 absolute
 set style data lines
-set key below autotitle columnheader
+## set key below autotitle columnheader
+set key autotitle columnheader
+set key spacing 3
+## set key at -100,-3
+set key below
+set bmargin at screen 0.22
+
+set tics font ", 16"
+set key font ", 16"
+set xlabel font ", 16"
+set ylabel font ", 16"
 
 # styles of constants
 set style line 1 linecolor rgb '#4B0082' linetype 1 linewidth 1 pointtype 10 pointsize 1.2
@@ -31,8 +41,9 @@ set style line 10 linecolor rgb "#FF1493" linetype 1 linewidth 1.5 pointtype 11 
 # Axes
 set xrange [0:{max_x}]
 set xlabel "{x_title}"
+set xtics nomirror
 ## set xtics nomirror rotate by 45 offset -1.7,-1.2
-set ytics nomirror
+## set ytics nomirror
 set yrange [0:{max_y}]
 set ylabel "{y_title}"
 

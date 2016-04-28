@@ -80,17 +80,35 @@ def make_plots(stats):
         # eval stats
         for metric, val, stdev in (('random', 5.3, 1.8), ('always-hold', 2.9, 1.0), ('hand-coded', 13.3, 8.3)):
             f_eval_stats.write(metric + '\n')
-            for ep in (0, 20000):
+            for ep in (0, 25000):
                 f_eval_stats.write('\t'.join(map(str, (ep, 0, 0, val, val, 0, stdev, 0, 0, '\n'))))
             f_eval_stats.write('\n\n')
 
+        all_lines = []
         for d_name, d in get_dirs():
             i += 1
+            lines = []
             header = []
             for p in important_params:
                 header.append(d_name.split('___')[p])
-            f_eval_stats.write('"{}"'.format(', '.join(header)).replace('_', '-') + '\n')
+            header_int = []
+            for v in header:
+                try:
+                    header_int.append(int(v))
+                except ValueError:
+                    header_int.append(v)
+            lines.append(header_int)
+            h = '"{}"'.format(', '.join(header)).replace('_', '-') + '\n'
+            h = h.replace('deepmind-rmsprop', 'DeepMind RMSProp')
+            h = h.replace('rmsprop', 'RMSProp')
+            lines.append(h)
+            # f_eval_stats.write('"{}"'.format(', '.join(header)).replace('_', '-') + '\n')
             for line in open(d + '/evaluation_stats2gnuplot.txt'):
+                # f_eval_stats.write(line)
+                lines.append(line)
+            all_lines.append(lines)
+        for lines in sorted(all_lines):
+            for line in lines[1:]:
                 f_eval_stats.write(line)
             # f_eval_stats.write('\t'.join(map(str, (last_line.split()[0], '0', '0', stats[d_name]['result (avg) [s]'], stats[d_name]['result (median) [s]'], '0', stats[d_name]['\'+-'], '0', '0', '\n'))))
             f_eval_stats.write('\n\n')
@@ -99,7 +117,7 @@ def make_plots(stats):
             'max_x': "21000",
             'max_y': "22",
             'title': 'Graph',
-            'x_title': 'Episodes',
+            'x_title': 'Learning episodes',
             'y_title': 'Performance (episode duration in seconds)',
             'terminal': 'svg',
             'file_stats': f_eval_stats.name,
@@ -176,5 +194,6 @@ def make_plots(stats):
     #                     print(f_graph.name)
     #                     subprocess.call(['gnuplot', f_graph.name])
 
-stats = parse_stats()
+# stats = parse_stats()
+stats = {}
 make_plots(stats)
